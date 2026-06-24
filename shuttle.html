@@ -291,6 +291,12 @@ details.more[open] summary::before{content:"－ ";}
       <input id="fHotel" placeholder="Neuer Hotelname" autocomplete="off" style="display:none">
     </div>
 
+    <!-- Hotel: nights -->
+    <div class="field" id="nightsField" style="display:none">
+      <label>Anzahl Nächte</label>
+      <input type="number" inputmode="numeric" id="fNights" value="1" min="1" max="30">
+    </div>
+
     <!-- Flight/Hotel: price (= paid = deductible) -->
     <div class="field" id="priceField">
       <label id="priceLabel">Ticketpreis (€)</label>
@@ -459,7 +465,7 @@ function render(){
       <div class="amt">
         <div class="e">${eur(c)} €</div>
         ${t.mode==='air'?`<div class="km">Ticketpreis</div>`
-          :t.mode==='hotel'?`<div class="km">Übernachtung</div>`
+          :t.mode==='hotel'?`<div class="km">${t.nights&&t.nights>1?t.nights+' Nächte':'Übernachtung'}</div>`
           :t.mode==='rail'?`<div class="km">${t.km||0} km · gez. ${eur(pc)} €</div>`
           :`<div class="km">${t.km||0} km · einfach</div>`}
       </div>
@@ -482,11 +488,12 @@ function setMode(m){
   const usesKm=rail||car;             // km-Feld = absetzbar
   $('routeBlock').style.display=hotel?'none':'';
   $('hotelField').style.display=hotel?'':'none';
+  $('nightsField').style.display=hotel?'':'none';
   if(hotel)renderHotelDropdown($('fHotelSelect').value||'');
   $('priceField').style.display=usesDirectPrice?'':'none';
   $('paidField').style.display=rail?'':'none';   // gezahlter Preis nur bei Bahn
   $('kmField').style.display=usesKm?'':'none';
-  $('priceLabel').textContent=hotel?'Übernachtungspreis (€)':'Ticketpreis (€)';
+  $('priceLabel').textContent=hotel?'Preis pro Nacht (€)':'Ticketpreis (€)';
   $('refLabel').textContent=MODE_INFO[m].refLabel;
   $('fRef').placeholder=MODE_INFO[m].refPh;
   $('refSummary').textContent=MODE_INFO[m].refLabel+' & Notiz hinzufügen';
@@ -513,6 +520,7 @@ function openSheet(id){
     $('fKm').value=t.km||'';$('fRef').value=t.ref||'';
     if(t.mode==='hotel'){
       renderHotelDropdown(t.note||'');
+      $('fNights').value=t.nights||1;
       $('fHotel').value='';$('fNote').value='';
     }else{$('fHotel').value='';$('fNote').value=t.note||'';}
     if(t.ref||(t.note&&t.mode!=='hotel'))document.querySelector('.more').open=true;
@@ -523,6 +531,7 @@ function openSheet(id){
     $('fPrice').value='';$('fPaid').value='';$('fKm').value='';$('fRef').value='';$('fNote').value='';
     const def=defaultHotel();
     renderHotelDropdown(def);
+    $('fNights').value=1;
     $('fHotel').value='';
     document.querySelector('.more').open=false;
   }
@@ -534,14 +543,17 @@ function closeSheet(){$('scrim').classList.remove('show');$('sheet').classList.r
 function saveTrip(){
   const usesDirectPrice=mode==='air'||mode==='hotel';
   const usesKm=mode==='rail'||mode==='car';
+  const nights=mode==='hotel'?Math.max(1,parseInt($('fNights').value)||1):1;
+  const basePrice=usesDirectPrice?parseNum($('fPrice').value):0;
   const t={
     id:editId||uid(),mode,
     date:$('fDate').value,
     from:mode==='hotel'?'':$('fFrom').value.trim().toUpperCase(),
     to:mode==='hotel'?'':$('fTo').value.trim().toUpperCase(),
-    price:usesDirectPrice?parseNum($('fPrice').value):0,
-    paid:usesDirectPrice?parseNum($('fPrice').value):(mode==='rail'?parseNum($('fPaid').value):0),
+    price:mode==='hotel'?basePrice*nights:basePrice,
+    paid:usesDirectPrice?(mode==='hotel'?basePrice*nights:basePrice):(mode==='rail'?parseNum($('fPaid').value):0),
     km:usesKm?parseNum($('fKm').value):0,
+    nights:mode==='hotel'?nights:undefined,
     ref:$('fRef').value.trim(),
     note:mode==='hotel'
       ?($('fHotelSelect').value==='__new__'||!$('fHotelSelect').value
