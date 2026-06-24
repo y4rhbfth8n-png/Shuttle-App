@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Shuttle">
+<meta name="theme-color" content="#0a1628">
+<title>Shuttle — Reisekosten</title>
+<style>
+:root{
+  --ink:#0a1628;          /* deep aviation navy */
+  --ink2:#13233d;
+  --sky:#3b82f6;          /* signal blue */
+  --sky-soft:#e8f0fe;
+  --rail:#0f9d8f;         /* teal for rail */
+  --road:#e07a3e;         /* amber for car */
+  --air:#3b82f6;          /* blue for flight */
+  --hotel:#8b5cf6;        /* violet for hotel */
+  --paper:#f6f7f9;
+  --card:#ffffff;
+  --line:#e3e7ee;
+  --muted:#7a8699;
+  --good:#0f9d8f;
+  --bad:#dc4b4b;
+  --shadow:0 1px 2px rgba(10,22,40,.04),0 8px 24px rgba(10,22,40,.06);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  background:var(--paper);color:var(--ink);
+  padding-bottom:env(safe-area-inset-bottom);
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:560px;margin:0 auto;}
+
+/* Header */
+header{
+  background:linear-gradient(160deg,var(--ink) 0%,var(--ink2) 100%);
+  color:#fff;padding:calc(env(safe-area-inset-top) + 20px) 22px 26px;
+  border-radius:0 0 26px 26px;position:relative;overflow:hidden;
+}
+header::after{content:"";position:absolute;right:-40px;top:-30px;width:180px;height:180px;
+  background:radial-gradient(circle,rgba(59,130,246,.28),transparent 70%);}
+.brand{display:flex;align-items:center;gap:9px;font-size:13px;letter-spacing:.16em;
+  text-transform:uppercase;color:#9db4d6;font-weight:600;}
+.brand .dot{width:7px;height:7px;border-radius:50%;background:var(--sky);box-shadow:0 0 10px var(--sky);}
+.total-label{font-size:13px;color:#9db4d6;margin-top:18px;font-weight:500;}
+.totals-row{display:flex;gap:18px;align-items:flex-end;margin-top:4px;}
+.tcol{flex:1;}
+.tcol .total-label{margin-top:0;}
+.filter-note{font-size:12px;color:#9db4d6;margin-top:10px;min-height:0;}
+.filter-note .clear{color:#fff;text-decoration:underline;cursor:pointer;margin-left:6px;}
+.total{font-size:30px;font-weight:700;letter-spacing:-.02em;margin-top:2px;line-height:1;}
+.total small{font-size:15px;font-weight:600;color:#9db4d6;}
+.total.sub{color:#cdd9ec;}
+.total.sub small{color:#9db4d6;}
+.year-pills{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;}
+.year-pill{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+  color:#cdd9ec;padding:6px 13px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;}
+.year-pill.on{background:var(--sky);border-color:var(--sky);color:#fff;}
+
+/* Breakdown strip */
+.strip{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 18px 4px;}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:12px 13px;box-shadow:var(--shadow);cursor:pointer;transition:.12s;
+  border-width:2px;border-color:var(--line);}
+.chip.on{border-color:var(--ink);background:#fbfcfe;box-shadow:0 2px 10px rgba(10,22,40,.12);}
+.chip .vrow{display:flex;justify-content:space-between;align-items:baseline;margin-top:2px;}
+.chip .ded{font-size:17px;font-weight:700;letter-spacing:-.01em;}
+.chip .paid{font-size:12px;color:var(--muted);font-weight:600;}
+.chip .ic{font-size:18px;}
+.chip .lab{font-size:11px;color:var(--muted);font-weight:600;margin-top:3px;text-transform:uppercase;letter-spacing:.04em;}
+.chip .val{font-size:17px;font-weight:700;margin-top:1px;letter-spacing:-.01em;}
+.chip .cnt{font-size:11px;color:var(--muted);}
+
+/* Section title */
+.sec{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 8px;}
+.sec h2{font-size:14px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0;font-weight:700;}
+.sec .exp{font-size:13px;font-weight:600;color:var(--sky);background:var(--sky-soft);
+  padding:7px 13px;border-radius:18px;cursor:pointer;border:none;}
+
+/* Trip list */
+.list{padding:0 14px 110px;}
+.trip{background:var(--card);border:1px solid var(--line);border-radius:18px;
+  padding:14px 15px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;gap:13px;
+  align-items:center;position:relative;}
+.mode-badge{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;
+  justify-content:center;font-size:21px;flex-shrink:0;}
+.m-air{background:#e8f0fe;}
+.m-rail{background:#e0f5f2;}
+.m-car{background:#fcefe5;}
+.m-hotel{background:#efe9fd;}
+.trip-main{flex:1;min-width:0;}
+.route{font-size:16px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:6px;}
+.route .arr{color:var(--muted);font-weight:400;}
+.meta{font-size:12.5px;color:var(--muted);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.ref{font-family:"SF Mono",ui-monospace,monospace;font-size:11px;background:var(--paper);
+  padding:1px 6px;border-radius:5px;color:#56627a;}
+.amt{text-align:right;flex-shrink:0;}
+.amt .e{font-size:17px;font-weight:700;letter-spacing:-.01em;}
+.amt .km{font-size:11px;color:var(--muted);}
+.trip .del{position:absolute;top:8px;right:10px;width:24px;height:24px;border-radius:50%;
+  border:none;background:transparent;color:var(--line);font-size:18px;display:none;cursor:pointer;}
+.trip.editmode{padding-right:40px;}
+.trip.editmode .del{display:flex;align-items:center;justify-content:center;color:var(--bad);background:#fdecec;}
+
+.empty{text-align:center;padding:60px 30px;color:var(--muted);}
+.empty .big{font-size:46px;margin-bottom:10px;}
+.empty p{font-size:14px;line-height:1.5;margin:6px 0;}
+
+/* FAB */
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(22px + env(safe-area-inset-bottom));
+  background:var(--ink);color:#fff;border:none;border-radius:30px;padding:15px 26px;
+  font-size:16px;font-weight:700;box-shadow:0 8px 28px rgba(10,22,40,.32);cursor:pointer;
+  display:flex;align-items:center;gap:8px;z-index:40;}
+.fab .plus{font-size:20px;line-height:1;}
+
+/* Sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,22,40,.45);backdrop-filter:blur(2px);
+  opacity:0;pointer-events:none;transition:opacity .25s;z-index:50;}
+.scrim.show{opacity:1;pointer-events:auto;}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--paper);
+  border-radius:24px 24px 0 0;z-index:60;transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:94vh;overflow-y:auto;
+  padding-bottom:calc(20px + env(safe-area-inset-bottom));}
+.sheet.show{transform:translateY(0);}
+.sheet-head{position:sticky;top:0;background:var(--paper);padding:8px 0 14px;text-align:center;z-index:2;}
+.grab{width:38px;height:5px;background:var(--line);border-radius:3px;margin:8px auto 14px;}
+.sheet-head h3{margin:0;font-size:19px;font-weight:700;}
+.sheet-body{padding:0 20px;}
+
+/* Mode selector */
+.modes{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:18px;}
+.mode-opt{padding:14px 4px;}
+.mode-opt{border:2px solid var(--line);background:var(--card);border-radius:16px;
+  padding:14px 8px;text-align:center;cursor:pointer;transition:.12s;}
+.mode-opt .mi{font-size:25px;}
+.mode-opt .mt{font-size:13px;font-weight:700;margin-top:4px;}
+.mode-opt.sel.air{border-color:var(--air);background:#e8f0fe;}
+.mode-opt.sel.rail{border-color:var(--rail);background:#e0f5f2;}
+.mode-opt.sel.car{border-color:var(--road);background:#fcefe5;}
+.mode-opt.sel.hotel{border-color:var(--hotel);background:#efe9fd;}
+
+/* Fields */
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:13px;font-weight:600;color:#56627a;margin-bottom:6px;}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);
+  background:var(--card);border-radius:13px;padding:13px 14px;font-size:16px;color:var(--ink);
+  font-family:inherit;outline:none;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--sky);
+  box-shadow:0 0 0 3px var(--sky-soft);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.swap{text-align:center;margin:-6px 0 8px;}
+.swap button{background:var(--sky-soft);border:none;color:var(--sky);font-size:13px;
+  font-weight:600;padding:5px 14px;border-radius:16px;cursor:pointer;}
+.hint{font-size:12px;color:var(--muted);margin-top:6px;}
+.calc-box{background:var(--sky-soft);border-radius:13px;padding:12px 14px;margin-bottom:14px;
+  font-size:13px;color:#2b4a7a;display:none;}
+.calc-box.show{display:block;}
+.calc-box b{font-size:16px;}
+details.more{margin-bottom:14px;}
+details.more summary{font-size:14px;font-weight:600;color:var(--sky);cursor:pointer;
+  list-style:none;padding:6px 0;}
+details.more summary::-webkit-details-marker{display:none;}
+details.more summary::before{content:"＋ ";font-weight:700;}
+details.more[open] summary::before{content:"－ ";}
+
+.save{width:100%;background:var(--ink);color:#fff;border:none;border-radius:15px;
+  padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-top:4px;}
+.save:disabled{opacity:.4;}
+
+/* Toast */
+.toast{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom));left:50%;
+  transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;
+  padding:12px 20px;border-radius:24px;font-size:14px;font-weight:600;opacity:0;
+  pointer-events:none;transition:.25s;z-index:80;box-shadow:0 8px 24px rgba(0,0,0,.3);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="dot"></span> Shuttle · Reisekosten</div>
+    <div class="totals-row">
+      <div class="tcol">
+        <div class="total-label">Entstanden <span id="yrLabel"></span></div>
+        <div class="total sub"><span id="paidVal">0,00</span> <small>€</small></div>
+      </div>
+      <div class="tcol">
+        <div class="total-label">Absetzbar</div>
+        <div class="total"><span id="totalVal">0,00</span> <small>€</small></div>
+      </div>
+    </div>
+    <div class="filter-note" id="filterNote"></div>
+    <div class="year-pills" id="yearPills"></div>
+  </header>
+
+  <div class="strip" id="strip">
+    <div class="chip" data-fmode="air"><div class="ic">✈️</div><div class="lab">Flug</div>
+      <div class="vrow"><span class="ded" id="sumAir">0 €</span><span class="paid" id="paidAir">0 €</span></div>
+      <div class="cnt" id="cntAir">0 Reisen</div></div>
+    <div class="chip" data-fmode="rail"><div class="ic">🚆</div><div class="lab">Bahn</div>
+      <div class="vrow"><span class="ded" id="sumRail">0 €</span><span class="paid" id="paidRail">0 €</span></div>
+      <div class="cnt" id="cntRail">0 Reisen</div></div>
+    <div class="chip" data-fmode="car"><div class="ic">🚗</div><div class="lab">Auto</div>
+      <div class="vrow"><span class="ded" id="sumCar">0 €</span><span class="paid" id="paidCar">0 €</span></div>
+      <div class="cnt" id="cntCar">0 Reisen</div></div>
+    <div class="chip" data-fmode="hotel"><div class="ic">🏨</div><div class="lab">Hotel</div>
+      <div class="vrow"><span class="ded" id="sumHotel">0 €</span><span class="paid" id="paidHotel">0 €</span></div>
+      <div class="cnt" id="cntHotel">0 Nächte</div></div>
+  </div>
+
+  <div class="sec">
+    <h2>Reisen</h2>
+    <div style="display:flex;gap:8px">
+      <button class="exp" id="importBtn">⬆︎ iCal</button>
+      <button class="exp" id="exportBtn">⬇︎ Excel</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;padding:0 20px 4px;justify-content:flex-end">
+    <button class="exp" id="backupCopyBtn" style="background:#e8f0fe;color:#1a56db;font-size:12px;padding:6px 11px;">📋 Backup kopieren</button>
+    <button class="exp" id="backupImportBtn" style="background:#e8f0fe;color:#1a56db;font-size:12px;padding:6px 11px;">📂 Wiederherstellen</button>
+  </div>
+  <input type="file" id="icsFile" accept=".ics,text/calendar" style="display:none">
+
+  <!-- Restore sheet -->
+  <div class="scrim" id="restoreScrim"></div>
+  <div class="sheet" id="restoreSheet">
+    <div class="sheet-head">
+      <div class="grab"></div>
+      <h3>Backup wiederherstellen</h3>
+    </div>
+    <div class="sheet-body">
+      <p style="font-size:14px;color:var(--muted);margin:0 0 12px">Öffne deine Notiz in der Notizen-App, kopiere den gesamten JSON-Text und füge ihn hier ein:</p>
+      <div class="field">
+        <label>JSON-Backup einfügen</label>
+        <textarea id="restorePaste" rows="7" placeholder='{"v":1,"trips":[…]}' style="font-family:ui-monospace,monospace;font-size:12px;resize:none;"></textarea>
+      </div>
+      <button class="save" id="restoreConfirmBtn">Wiederherstellen</button>
+      <button style="width:100%;background:transparent;border:none;color:var(--muted);padding:14px;font-size:14px;cursor:pointer;" id="restoreCancelBtn">Abbrechen</button>
+    </div>
+  </div>
+
+  <div class="list" id="list"></div>
+</div>
+
+<button class="fab" id="addBtn"><span class="plus">＋</span> Reise</button>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-head">
+    <div class="grab"></div>
+    <h3 id="sheetTitle">Neue Reise</h3>
+  </div>
+  <div class="sheet-body">
+    <div class="modes" id="modes">
+      <div class="mode-opt air" data-mode="air"><div class="mi">✈️</div><div class="mt">Flug</div></div>
+      <div class="mode-opt rail" data-mode="rail"><div class="mi">🚆</div><div class="mt">Bahn</div></div>
+      <div class="mode-opt car" data-mode="car"><div class="mi">🚗</div><div class="mt">Auto</div></div>
+      <div class="mode-opt hotel" data-mode="hotel"><div class="mi">🏨</div><div class="mt">Hotel</div></div>
+    </div>
+
+    <div class="field">
+      <label>Datum</label>
+      <input type="date" id="fDate">
+    </div>
+
+    <div id="routeBlock">
+      <div class="row2">
+        <div class="field"><label>Von</label><input id="fFrom" placeholder="BER" autocomplete="off"></div>
+        <div class="field"><label>Nach</label><input id="fTo" placeholder="FRA" autocomplete="off"></div>
+      </div>
+      <div class="swap"><button id="swapBtn">↑↓ Tauschen</button></div>
+    </div>
+
+    <!-- Hotel: name -->
+    <div class="field" id="hotelField" style="display:none">
+      <label>Hotel (Name / Ort)</label>
+      <input id="fHotel" placeholder="z. B. MK, Steigenberger, Mainz" autocomplete="off">
+    </div>
+
+    <!-- Flight/Hotel: price (= paid = deductible) -->
+    <div class="field" id="priceField">
+      <label id="priceLabel">Ticketpreis (€)</label>
+      <input type="text" inputmode="decimal" id="fPrice" placeholder="z. B. 38,50">
+    </div>
+
+    <!-- Rail: actually paid price -->
+    <div class="field" id="paidField" style="display:none">
+      <label>Gezahlter Preis (€)</label>
+      <input type="text" inputmode="decimal" id="fPaid" placeholder="z. B. 31,90">
+      <div class="hint">Dein tatsächlich bezahlter Fahrpreis (für die Übersicht „Entstanden").</div>
+    </div>
+
+    <!-- Rail/Car: distance -->
+    <div class="field" id="kmField" style="display:none">
+      <label>Entfernung — einfacher Weg (km)</label>
+      <input type="text" inputmode="decimal" id="fKm" placeholder="z. B. 420">
+      <div class="hint">Entfernungspauschale: 0,30 €/km bis 20 km, danach 0,38 €/km.</div>
+    </div>
+    <div class="calc-box" id="calcBox"></div>
+
+    <details class="more">
+      <summary id="refSummary">Beleg-Nr. & Notiz hinzufügen</summary>
+      <div style="padding-top:6px">
+        <div class="field">
+          <label id="refLabel">Ticketnummer</label>
+          <input id="fRef" placeholder="optional" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Notiz / Zweck</label>
+          <input id="fNote" placeholder="z. B. Dienst FRA, Hinflug" autocomplete="off">
+        </div>
+      </div>
+    </details>
+
+    <button class="save" id="saveBtn">Reise speichern</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SEED=[{"id":"ics0000","mode":"air","date":"2020-01-02","from":"BER","to":"FRA","price":41.0,"paid":41.0,"km":0,"ref":"2208526130857","note":""},{"id":"ics0001","mode":"air","date":"2020-01-03","from":"FRA","to":"BER","price":35.61,"paid":35.61,"km":0,"ref":"2208526615101","note":""},{"id":"ics0002","mode":"rail","date":"2020-01-21","from":"BER","to":"FRA","price":0,"paid":17.9,"km":545,"ref":"ZGOE6B","note":""},{"id":"ics0003","mode":"air","date":"2020-01-25","from":"FRA","to":"BER","price":35.61,"paid":35.61,"km":0,"ref":"2208527857866","note":""},{"id":"ics0004","mode":"rail","date":"2020-01-31","from":"BER","to":"FRA","price":0,"paid":17.9,"km":545,"ref":"DOBUK8","note":""},{"id":"ics0005","mode":"hotel","date":"2020-02-04","from":"","to":"","price":64.0,"paid":64.0,"km":0,"ref":"","note":"NH"},{"id":"ics0006","mode":"air","date":"2020-02-05","from":"FRA","to":"BER","price":35.61,"paid":35.61,"km":0,"ref":"2208528403263","note":""},{"id":"ics0007","mode":"hotel","date":"2020-02-09","from":"","to":"","price":160.64,"paid":160.64,"km":0,"ref":"","note":"MK"},{"id":"ics0008","mode":"rail","date":"2020-02-09","from":"BER","to":"FRA","price":0,"paid":16.1,"km":545,"ref":"2QCSD1","note":""},{"id":"ics0009","mode":"air","date":"2020-02-14","from":"FRA","to":"BER","price":35.61,"paid":35.61,"km":0,"ref":"2208528929613","note":""},{"id":"ics0010","mode":"air","date":"2020-02-28","from":"FRA","to":"BER","price":35.61,"paid":35.61,"km":0,"ref":"2208529608828","note":""},{"id":"ics0011","mode":"hotel","date":"2020-03-02","from":"","to":"","price":59.0,"paid":59.0,"km":0,"ref":"","note":"moxy"},{"id":"ics0012","mode":"rail","date":"2020-03-02","from":"BER","to":"FRA","price":0,"paid":23.9,"km":545,"ref":"XGCG1Z","note":""},{"id":"ics0013","mode":"hotel","date":"2020-03-04","from":"","to":"","price":59.0,"paid":59.0,"km":0,"ref":"","note":"moxy"},{"id":"ics0014","mode":"air","date":"2020-03-05","from":"FRA","to":"BER","price":35.61,"paid":35.61,"km":0,"ref":"2208529956292","note":""},{"id":"ics0015","mode":"air","date":"2020-03-12","from":"FRA","to":"BER","price":37.61,"paid":37.61,"km":0,"ref":"2202300258303","note":""},{"id":"ics0016","mode":"air","date":"2020-03-15","from":"BER","to":"FRA","price":36.0,"paid":36.0,"km":0,"ref":"2202300198733","note":""},{"id":"ics0017","mode":"hotel","date":"2020-03-15","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0018","mode":"air","date":"2020-03-17","from":"FRA","to":"BER","price":37.61,"paid":37.61,"km":0,"ref":"2202300482658","note":""},{"id":"ics0019","mode":"rail","date":"2020-03-22","from":"BER","to":"FRA","price":0,"paid":25.1,"km":545,"ref":"8BY2TL","note":""},{"id":"ics0020","mode":"hotel","date":"2020-03-22","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0021","mode":"hotel","date":"2020-03-23","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0022","mode":"air","date":"2020-03-26","from":"FRA","to":"BER","price":37.61,"paid":37.61,"km":0,"ref":"2202300670991","note":""},{"id":"ics0023","mode":"rail","date":"2020-08-31","from":"BER","to":"FRA","price":0,"paid":16.1,"km":545,"ref":"746XPO","note":""},{"id":"ics0024","mode":"hotel","date":"2020-08-31","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0025","mode":"rail","date":"2020-09-01","from":"FRA","to":"BER","price":0,"paid":16.1,"km":545,"ref":"ZDGVRM","note":""},{"id":"ics0026","mode":"rail","date":"2020-09-09","from":"FRA","to":"BER","price":0,"paid":16.1,"km":545,"ref":"VNUHQG","note":""},{"id":"ics0027","mode":"rail","date":"2020-09-14","from":"FRA","to":"BER","price":0,"paid":16.1,"km":545,"ref":"BNNV1R","note":""},{"id":"ics0028","mode":"rail","date":"2020-09-25","from":"BER","to":"FRA","price":0,"paid":34.1,"km":545,"ref":"RZXWOF","note":""},{"id":"ics0029","mode":"rail","date":"2020-09-28","from":"FRA","to":"BER","price":0,"paid":25.1,"km":545,"ref":"DPXNWG","note":""},{"id":"ics0030","mode":"rail","date":"2020-10-01","from":"BER","to":"FRA","price":0,"paid":25.1,"km":545,"ref":"GH1MTE","note":""},{"id":"ics0031","mode":"rail","date":"2020-10-03","from":"FRA","to":"BER","price":0,"paid":43.1,"km":545,"ref":"YRAZNC","note":""},{"id":"ics0032","mode":"rail","date":"2020-10-11","from":"BER","to":"FRA","price":0,"paid":16.1,"km":545,"ref":"9CXPQ6","note":""},{"id":"ics0033","mode":"air","date":"2020-10-13","from":"FRA","to":"BER","price":40.5,"paid":40.5,"km":0,"ref":"2202457390583","note":""},{"id":"ics0034","mode":"rail","date":"2020-10-14","from":"FRA","to":"BER","price":0,"paid":16.1,"km":545,"ref":"ZHHSXR","note":""},{"id":"ics0035","mode":"rail","date":"2020-10-25","from":"BER","to":"FRA","price":0,"paid":25.1,"km":545,"ref":"9D8GPN","note":""},{"id":"ics0036","mode":"rail","date":"2020-10-27","from":"BER","to":"FRA","price":0,"paid":16.1,"km":545,"ref":"KUPBDD","note":""},{"id":"ics0037","mode":"rail","date":"2020-10-29","from":"FRA","to":"BER","price":0,"paid":16.1,"km":545,"ref":"VSWW94","note":""},{"id":"ics0038","mode":"air","date":"2020-11-01","from":"BER","to":"FRA","price":0,"paid":0,"km":0,"ref":"2202457635097","note":""},{"id":"ics0039","mode":"rail","date":"2020-11-03","from":"FRA","to":"BER","price":0,"paid":16.1,"km":545,"ref":"DYWUMA","note":""},{"id":"ics0040","mode":"rail","date":"2020-11-04","from":"BER","to":"FRA","price":0,"paid":16.1,"km":545,"ref":"DYWUMA","note":""},{"id":"ics0041","mode":"air","date":"2020-11-05","from":"FRA","to":"BER","price":40.5,"paid":40.5,"km":0,"ref":"2202457666326","note":""},{"id":"ics0042","mode":"car","date":"2020-11-15","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0043","mode":"car","date":"2020-11-16","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0044","mode":"rail","date":"2020-11-23","from":"BER","to":"FRA","price":0,"paid":16.1,"km":545,"ref":"8NTFKE","note":""},{"id":"ics0045","mode":"hotel","date":"2020-11-23","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0046","mode":"rail","date":"2020-11-24","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"HGZH4X","note":""},{"id":"ics0047","mode":"car","date":"2020-11-25","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0048","mode":"car","date":"2020-11-27","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0049","mode":"rail","date":"2020-12-21","from":"BER","to":"FRA","price":0,"paid":22.33,"km":545,"ref":"220667567755","note":""},{"id":"ics0050","mode":"rail","date":"2021-01-02","from":"BER","to":"FRA","price":0,"paid":25.1,"km":545,"ref":"KTHG62","note":""},{"id":"ics0051","mode":"rail","date":"2021-01-03","from":"FRA","to":"BER","price":0,"paid":43.9,"km":545,"ref":"LUY4ML","note":""},{"id":"ics0052","mode":"rail","date":"2021-01-03","from":"FRA","to":"BER","price":0,"paid":25.1,"km":545,"ref":"","note":""},{"id":"ics0053","mode":"rail","date":"2021-01-05","from":"BER","to":"FRA","price":0,"paid":25.1,"km":545,"ref":"","note":""},{"id":"ics0054","mode":"rail","date":"2021-01-05","from":"BER","to":"FRA","price":0,"paid":25.1,"km":545,"ref":"12NDRB","note":""},{"id":"ics0055","mode":"rail","date":"2021-01-07","from":"Shuttle  FRA","to":"BER","price":0,"paid":40.17,"km":545,"ref":"","note":""},{"id":"ics0056","mode":"rail","date":"2021-01-20","from":"BER","to":"FRA","price":0,"paid":25.1,"km":545,"ref":"WEYCC1","note":""},{"id":"ics0057","mode":"rail","date":"2021-01-20","from":"BER","to":"FRA","price":0,"paid":25.1,"km":545,"ref":"","note":""},{"id":"ics0058","mode":"car","date":"2021-01-22","from":"Shuttle  Frankfurt","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0059","mode":"car","date":"2021-01-24","from":"Shuttle  Berlin","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0060","mode":"rail","date":"2021-01-26","from":"FRA","to":"BER","price":0,"paid":16.9,"km":545,"ref":"","note":""},{"id":"ics0061","mode":"rail","date":"2021-01-28","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"","note":""},{"id":"ics0062","mode":"rail","date":"2021-01-29","from":"FRA","to":"BER","price":0,"paid":16.9,"km":545,"ref":"","note":""},{"id":"ics0063","mode":"car","date":"2021-04-02","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0064","mode":"car","date":"2021-04-03","from":"","to":"Bayreuth","price":0,"paid":0,"km":545,"ref":"","note":"⚠︎ Strecke prüfen"},{"id":"ics0065","mode":"car","date":"2021-04-05","from":"Auto Bayreuth","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0066","mode":"car","date":"2021-04-05","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0067","mode":"rail","date":"2021-04-07","from":"BER","to":"FRA","price":0,"paid":31.9,"km":545,"ref":"HAHU6G","note":""},{"id":"ics0068","mode":"rail","date":"2021-04-10","from":"","to":"","price":0,"paid":40.9,"km":545,"ref":"HAHU6G","note":"⚠︎ Strecke prüfen"},{"id":"ics0069","mode":"rail","date":"2021-04-14","from":"BER","to":"FRA","price":0,"paid":25.1,"km":545,"ref":"VFUSME","note":""},{"id":"ics0070","mode":"hotel","date":"2021-04-14","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0071","mode":"hotel","date":"2021-04-15","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0072","mode":"rail","date":"2021-04-19","from":"FRA","to":"BER","price":0,"paid":25.1,"km":545,"ref":"4UCPZD","note":""},{"id":"ics0073","mode":"rail","date":"2021-04-24","from":"BER","to":"FRA","price":0,"paid":25.1,"km":545,"ref":"HO8N2N","note":""},{"id":"ics0074","mode":"hotel","date":"2021-04-24","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0075","mode":"air","date":"2021-04-25","from":"FRA","to":"BER","price":40.17,"paid":40.17,"km":0,"ref":"NSEYW7","note":""},{"id":"ics0076","mode":"rail","date":"2021-04-28","from":"BER","to":"FRA","price":0,"paid":40.9,"km":545,"ref":"3TGNWL","note":""},{"id":"ics0077","mode":"rail","date":"2021-04-29","from":"FRA","to":"BER","price":0,"paid":40.9,"km":545,"ref":"1GBLWT","note":""},{"id":"ics0078","mode":"rail","date":"2021-05-11","from":"BER","to":"FRA","price":0,"paid":43.9,"km":545,"ref":"KE6KL9","note":""},{"id":"ics0079","mode":"hotel","date":"2021-05-11","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0080","mode":"air","date":"2021-05-12","from":"FRA","to":"BER","price":40.17,"paid":40.17,"km":0,"ref":"2202460924828","note":""},{"id":"ics0081","mode":"rail","date":"2021-05-15","from":"BER","to":"FRA","price":0,"paid":25.1,"km":545,"ref":"PQS83S","note":""},{"id":"ics0082","mode":"hotel","date":"2021-05-15","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0083","mode":"hotel","date":"2021-05-17","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0084","mode":"rail","date":"2021-05-19","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"ZQ46UD","note":""},{"id":"ics0085","mode":"car","date":"2021-05-21","from":"Shuttle  Car Berlin","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0086","mode":"rail","date":"2021-05-21","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"4MZAKU","note":""},{"id":"ics0087","mode":"rail","date":"2021-05-24","from":"FRA","to":"BER","price":0,"paid":43.9,"km":545,"ref":"LC9UMP","note":""},{"id":"ics0088","mode":"rail","date":"2021-05-29","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"ATHS2Z","note":""},{"id":"ics0089","mode":"rail","date":"2021-05-31","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"7Y1AS6","note":""},{"id":"ics0090","mode":"rail","date":"2021-07-07","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"3DD1RU","note":""},{"id":"ics0091","mode":"air","date":"2021-07-12","from":"FRA","to":"BER","price":43.17,"paid":43.17,"km":0,"ref":"2202463009247","note":""},{"id":"ics0092","mode":"rail","date":"2021-07-15","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"TZ1PKS","note":""},{"id":"ics0093","mode":"hotel","date":"2021-07-15","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0094","mode":"hotel","date":"2021-07-16","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0095","mode":"rail","date":"2021-07-16","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"MOMSS9","note":""},{"id":"ics0096","mode":"air","date":"2021-07-20","from":"FRA","to":"BER","price":43.17,"paid":43.17,"km":0,"ref":"2202463299599","note":""},{"id":"ics0097","mode":"air","date":"2021-07-22","from":"BER","to":"FRA","price":45.59,"paid":45.59,"km":0,"ref":"2202463647961","note":""},{"id":"ics0098","mode":"car","date":"2021-07-24","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0099","mode":"car","date":"2021-07-27","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0100","mode":"air","date":"2021-07-29","from":"FRA","to":"BER","price":43.17,"paid":43.17,"km":0,"ref":"2202463878994","note":""},{"id":"ics0101","mode":"rail","date":"2021-07-30","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"G1KW7L","note":""},{"id":"ics0102","mode":"car","date":"2021-07-31","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0103","mode":"rail","date":"2021-08-04","from":"BER","to":"FRA","price":0,"paid":40.9,"km":545,"ref":"9LSHOR","note":""},{"id":"ics0104","mode":"hotel","date":"2021-08-07","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0105","mode":"air","date":"2021-08-08","from":"FRA","to":"BER","price":43.17,"paid":43.17,"km":0,"ref":"2202464185854","note":""},{"id":"ics0106","mode":"rail","date":"2021-08-17","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"7ETLBV","note":""},{"id":"ics0107","mode":"rail","date":"2021-08-22","from":"FRA","to":"BER","price":0,"paid":34.9,"km":545,"ref":"LPQZO6","note":""},{"id":"ics0108","mode":"rail","date":"2021-08-25","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"NZTTSL","note":""},{"id":"ics0109","mode":"car","date":"2021-08-29","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0110","mode":"car","date":"2021-09-02","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0111","mode":"air","date":"2021-09-06","from":"FRA","to":"BER","price":43.17,"paid":43.17,"km":0,"ref":"2202465121145","note":""},{"id":"ics0112","mode":"rail","date":"2021-09-09","from":"BER","to":"FRA","price":0,"paid":25.9,"km":545,"ref":"EVPACX","note":""},{"id":"ics0113","mode":"hotel","date":"2021-09-09","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0114","mode":"car","date":"2021-09-10","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0115","mode":"car","date":"2021-09-12","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0116","mode":"rail","date":"2021-09-16","from":"FRA","to":"BER","price":0,"paid":31.9,"km":545,"ref":"963W76","note":""},{"id":"ics0117","mode":"air","date":"2021-09-19","from":"FRA","to":"BER","price":48.17,"paid":48.17,"km":0,"ref":"2202465090271","note":""},{"id":"ics0118","mode":"air","date":"2021-09-19","from":"BER","to":"FRA","price":46.59,"paid":46.59,"km":0,"ref":"2202465090260","note":""},{"id":"ics0119","mode":"rail","date":"2021-09-24","from":"BER","to":"FRA","price":0,"paid":31.9,"km":545,"ref":"V4XO1C","note":""},{"id":"ics0120","mode":"car","date":"2021-09-25","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0121","mode":"rail","date":"2021-10-09","from":"BER","to":"FRA","price":0,"paid":31.9,"km":545,"ref":"CLEA6P","note":""},{"id":"ics0122","mode":"rail","date":"2021-10-13","from":"FRA","to":"BER","price":0,"paid":16.9,"km":545,"ref":"Y69FFN","note":""},{"id":"ics0123","mode":"car","date":"2021-10-18","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0124","mode":"hotel","date":"2021-10-18","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0125","mode":"rail","date":"2021-10-20","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"LNSEEG","note":""},{"id":"ics0126","mode":"rail","date":"2021-10-24","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"BFNGNX","note":""},{"id":"ics0127","mode":"car","date":"2021-10-27","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0128","mode":"air","date":"2021-11-02","from":"BER","to":"FRA","price":45.59,"paid":45.59,"km":0,"ref":"2202467752562","note":""},{"id":"ics0129","mode":"air","date":"2021-11-02","from":"FRA","to":"BER","price":40.17,"paid":40.17,"km":0,"ref":"2202467964966","note":""},{"id":"ics0130","mode":"air","date":"2021-11-09","from":"BER","to":"FRA","price":45.59,"paid":45.59,"km":0,"ref":"2202467964975","note":""},{"id":"ics0131","mode":"rail","date":"2021-11-13","from":"FRA","to":"BER","price":0,"paid":16.9,"km":545,"ref":"Z3SMUE","note":""},{"id":"ics0132","mode":"rail","date":"2021-11-15","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"9MEOXD","note":""},{"id":"ics0133","mode":"rail","date":"2021-11-17","from":"FRA","to":"BER","price":0,"paid":25.9,"km":545,"ref":"9X6LH6","note":""},{"id":"ics0134","mode":"car","date":"2021-11-21","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0135","mode":"air","date":"2021-11-24","from":"FRA","to":"BER","price":85.76,"paid":85.76,"km":0,"ref":"2202468503681","note":""},{"id":"ics0136","mode":"hotel","date":"2021-11-28","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0137","mode":"air","date":"2021-11-28","from":"BER","to":"FRA","price":85.76,"paid":85.76,"km":0,"ref":"2202468503681","note":""},{"id":"ics0138","mode":"car","date":"2021-12-02","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0139","mode":"hotel","date":"2021-12-06","from":"","to":"","price":40.0,"paid":40.0,"km":0,"ref":"","note":"MK"},{"id":"ics0140","mode":"rail","date":"2021-12-10","from":"BER","to":"FRA","price":0,"paid":34.9,"km":545,"ref":"6SBAU3","note":""},{"id":"ics0141","mode":"rail","date":"2021-12-12","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"LNVXWL","note":""},{"id":"ics0142","mode":"hotel","date":"2021-12-12","from":"","to":"","price":80.0,"paid":80.0,"km":0,"ref":"","note":"MK"},{"id":"ics0143","mode":"rail","date":"2021-12-14","from":"FRA","to":"BER","price":0,"paid":16.9,"km":545,"ref":"6VSFSU","note":""},{"id":"ics0144","mode":"air","date":"2021-12-27","from":"FRA","to":"BER","price":44.17,"paid":44.17,"km":0,"ref":"2202469618858","note":""},{"id":"ics0145","mode":"rail","date":"2021-12-30","from":"FRA","to":"BER","price":0,"paid":16.9,"km":545,"ref":"SQW8SZ","note":""},{"id":"ics0146","mode":"rail","date":"2022-01-27","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"FQ8TLG","note":""},{"id":"ics0147","mode":"air","date":"2022-01-28","from":"BER","to":"FRA","price":86.97,"paid":86.97,"km":0,"ref":"2202470701553","note":""},{"id":"ics0148","mode":"air","date":"2022-01-30","from":"FRA","to":"BER","price":86.97,"paid":86.97,"km":0,"ref":"2202470701553","note":""},{"id":"ics0149","mode":"rail","date":"2022-03-02","from":"BER","to":"FRA","price":0,"paid":31.9,"km":545,"ref":"UK2S7G","note":""},{"id":"ics0150","mode":"rail","date":"2022-03-03","from":"Zug FRA","to":"Bayreuth NHK","price":0,"paid":29.99,"km":545,"ref":"NHK2PH","note":""},{"id":"ics0151","mode":"rail","date":"2022-03-06","from":"Zug Bayreuth","to":"FRA F","price":0,"paid":0,"km":545,"ref":"F78UOW","note":""},{"id":"ics0152","mode":"rail","date":"2022-03-10","from":"FRA","to":"BER","price":0,"paid":16.9,"km":545,"ref":"PMWPW6","note":""},{"id":"ics0153","mode":"air","date":"2022-03-13","from":"BER","to":"FRA","price":88.79,"paid":88.79,"km":0,"ref":"2202472501457","note":""},{"id":"ics0154","mode":"air","date":"2022-03-14","from":"FRA","to":"BER","price":88.79,"paid":88.79,"km":0,"ref":"2202472501457","note":""},{"id":"ics0155","mode":"rail","date":"2022-03-22","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"DLFSN4","note":""},{"id":"ics0156","mode":"hotel","date":"2022-03-22","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0157","mode":"hotel","date":"2022-04-14","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0158","mode":"rail","date":"2022-04-14","from":"BER","to":"FRA","price":0,"paid":34.9,"km":545,"ref":"SWDY7P","note":""},{"id":"ics0159","mode":"air","date":"2022-04-23","from":"FRA","to":"BER","price":89.97,"paid":89.97,"km":0,"ref":"2202474668103","note":""},{"id":"ics0160","mode":"air","date":"2022-04-23","from":"BER","to":"FRA","price":89.97,"paid":89.97,"km":0,"ref":"2202474668103","note":""},{"id":"ics0161","mode":"rail","date":"2022-04-25","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"8VOFGD","note":""},{"id":"ics0162","mode":"air","date":"2022-05-05","from":"FRA","to":"BER","price":89.97,"paid":89.97,"km":0,"ref":"2202475269987","note":""},{"id":"ics0163","mode":"hotel","date":"2022-05-08","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0164","mode":"rail","date":"2022-05-17","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"R7OPB9","note":""},{"id":"ics0165","mode":"rail","date":"2022-05-21","from":"FRA","to":"BER","price":0,"paid":76.4,"km":545,"ref":"9LBL6L","note":""},{"id":"ics0166","mode":"rail","date":"2022-05-23","from":"BER","to":"FRA","price":0,"paid":13.4,"km":545,"ref":"WYUDKO","note":""},{"id":"ics0167","mode":"hotel","date":"2022-05-23","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0168","mode":"air","date":"2022-05-24","from":"FRA","to":"BER","price":46.04,"paid":46.04,"km":0,"ref":"2202476550761","note":""},{"id":"ics0169","mode":"rail","date":"2022-05-28","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"6PHF8G","note":""},{"id":"ics0170","mode":"rail","date":"2022-06-02","from":"FRA","to":"BER","price":0,"paid":25.9,"km":545,"ref":"DEDMO8","note":""},{"id":"ics0171","mode":"hotel","date":"2022-06-02","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0172","mode":"air","date":"2022-06-04","from":"BER","to":"FRA","price":89.97,"paid":89.97,"km":0,"ref":"2202476957081","note":""},{"id":"ics0173","mode":"rail","date":"2022-06-06","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"MYQL43","note":""},{"id":"ics0174","mode":"hotel","date":"2022-06-06","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0175","mode":"rail","date":"2022-06-11","from":"FRA","to":"BER","price":0,"paid":16.9,"km":545,"ref":"SMD14K","note":""},{"id":"ics0176","mode":"rail","date":"2022-06-14","from":"BER","to":"FRA","price":0,"paid":25.9,"km":545,"ref":"DNVE13","note":""},{"id":"ics0177","mode":"hotel","date":"2022-06-14","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0178","mode":"air","date":"2022-06-16","from":"FRA","to":"BER","price":90.97,"paid":90.97,"km":0,"ref":"2202477717091","note":""},{"id":"ics0179","mode":"air","date":"2022-06-25","from":"FRA","to":"BER","price":48.02,"paid":48.02,"km":0,"ref":"2202478577518","note":""},{"id":"ics0180","mode":"air","date":"2022-06-27","from":"BER","to":"FRA","price":90.97,"paid":90.97,"km":0,"ref":"2202477717091","note":""},{"id":"ics0181","mode":"rail","date":"2022-06-29","from":"FRA","to":"BER","price":0,"paid":25.9,"km":545,"ref":"RCADE1","note":""},{"id":"ics0182","mode":"hotel","date":"2022-07-16","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0183","mode":"rail","date":"2022-07-16","from":"BER","to":"FRA","price":0,"paid":35.9,"km":545,"ref":"9T4NPS","note":""},{"id":"ics0184","mode":"rail","date":"2022-07-20","from":"FRA","to":"BER","price":0,"paid":34.9,"km":545,"ref":"YGSZW2","note":""},{"id":"ics0185","mode":"rail","date":"2022-07-22","from":"","to":"Köln","price":0,"paid":31.9,"km":545,"ref":"YA1AY6","note":"⚠︎ Strecke prüfen"},{"id":"ics0186","mode":"rail","date":"2022-07-23","from":"Zug Köln","to":"FRA T","price":0,"paid":29.9,"km":545,"ref":"T7T28H","note":""},{"id":"ics0187","mode":"rail","date":"2022-07-23","from":"Zug FRA","to":"Köln AMBGHP","price":0,"paid":29.9,"km":545,"ref":"AMBGHP","note":""},{"id":"ics0188","mode":"rail","date":"2022-07-24","from":"Zug Köln","to":"FRA UK","price":0,"paid":31.9,"km":545,"ref":"UK9TZ3","note":""},{"id":"ics0189","mode":"hotel","date":"2022-07-24","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0190","mode":"rail","date":"2022-07-29","from":"FRA","to":"BER","price":0,"paid":31.9,"km":545,"ref":"NYLCEW","note":""},{"id":"ics0191","mode":"rail","date":"2022-07-30","from":"FRA","to":"BER","price":0,"paid":71.9,"km":545,"ref":"TE4HUQ","note":""},{"id":"ics0192","mode":"air","date":"2022-08-05","from":"Flug MUC","to":"BER","price":40.56,"paid":40.56,"km":0,"ref":"2202480725071","note":""},{"id":"ics0193","mode":"hotel","date":"2022-08-10","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0194","mode":"air","date":"2022-08-11","from":"FRA","to":"BER","price":95.97,"paid":95.97,"km":0,"ref":"2202480851144","note":""},{"id":"ics0195","mode":"hotel","date":"2022-08-13","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0196","mode":"rail","date":"2022-08-13","from":"BER","to":"FRA","price":0,"paid":40.9,"km":545,"ref":"RK4QUE","note":""},{"id":"ics0197","mode":"air","date":"2022-08-18","from":"FRA","to":"BER","price":51.04,"paid":51.04,"km":0,"ref":"2202481226703","note":""},{"id":"ics0198","mode":"rail","date":"2022-08-21","from":"BER","to":"FRA","price":0,"paid":24.9,"km":545,"ref":"KTX27W","note":""},{"id":"ics0199","mode":"air","date":"2022-08-22","from":"FRA","to":"BER","price":42.04,"paid":42.04,"km":0,"ref":"2202481437584","note":""},{"id":"ics0200","mode":"rail","date":"2022-08-25","from":"BER","to":"FRA","price":0,"paid":31.9,"km":545,"ref":"Q43ZAQ","note":""},{"id":"ics0201","mode":"air","date":"2022-08-29","from":"FRA","to":"BER","price":42.04,"paid":42.04,"km":0,"ref":"2202481896449","note":""},{"id":"ics0202","mode":"rail","date":"2022-09-02","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"29P11W","note":""},{"id":"ics0203","mode":"hotel","date":"2022-09-02","from":"","to":"","price":90.0,"paid":90.0,"km":0,"ref":"","note":"MK"},{"id":"ics0204","mode":"air","date":"2022-09-06","from":"FRA","to":"BER","price":42.04,"paid":42.04,"km":0,"ref":"2202482318886","note":""},{"id":"ics0205","mode":"rail","date":"2022-09-09","from":"BER","to":"FRA","price":0,"paid":40.9,"km":545,"ref":"VH9LR3","note":""},{"id":"ics0206","mode":"hotel","date":"2022-09-09","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0207","mode":"air","date":"2022-09-11","from":"FRA","to":"BER","price":51.04,"paid":51.04,"km":0,"ref":"2202482341489","note":""},{"id":"ics0208","mode":"rail","date":"2022-09-13","from":"BER","to":"FRA","price":0,"paid":31.9,"km":545,"ref":"MZA3ED","note":""},{"id":"ics0209","mode":"rail","date":"2022-09-16","from":"Zug FRA","to":"Bayreuth EHNGOY","price":0,"paid":29.9,"km":545,"ref":"EHNGOY","note":""},{"id":"ics0210","mode":"rail","date":"2022-09-18","from":"Zug Bayreuth","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"7R7FH7","note":""},{"id":"ics0211","mode":"air","date":"2022-09-22","from":"FRA","to":"BER","price":42.04,"paid":42.04,"km":0,"ref":"2202483179318","note":""},{"id":"ics0212","mode":"hotel","date":"2022-09-24","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0213","mode":"air","date":"2022-09-24","from":"BER","to":"FRA","price":95.97,"paid":95.97,"km":0,"ref":"2202480851144","note":""},{"id":"ics0214","mode":"hotel","date":"2022-09-26","from":"","to":"","price":64.0,"paid":64.0,"km":0,"ref":"","note":"Moxy"},{"id":"ics0215","mode":"air","date":"2022-09-27","from":"FRA","to":"BER","price":42.04,"paid":42.04,"km":0,"ref":"2202483240857","note":""},{"id":"ics0216","mode":"hotel","date":"2022-10-08","from":"","to":"","price":112.0,"paid":112.0,"km":0,"ref":"","note":"Mainz"},{"id":"ics0217","mode":"hotel","date":"2022-10-09","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0218","mode":"hotel","date":"2022-10-11","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0219","mode":"rail","date":"2022-10-13","from":"FRA","to":"BER","price":0,"paid":43.9,"km":545,"ref":"Y9CA87","note":""},{"id":"ics0220","mode":"hotel","date":"2022-10-16","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0221","mode":"rail","date":"2022-10-16","from":"FRA","to":"BER","price":0,"paid":34.9,"km":545,"ref":"G6R8A8","note":""},{"id":"ics0222","mode":"hotel","date":"2022-10-17","from":"","to":"","price":62.0,"paid":62.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0223","mode":"hotel","date":"2022-10-18","from":"","to":"","price":62.0,"paid":62.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0224","mode":"air","date":"2022-10-19","from":"FRA","to":"BER","price":43.04,"paid":43.04,"km":0,"ref":"2202484357450","note":""},{"id":"ics0225","mode":"hotel","date":"2022-10-25","from":"","to":"","price":62.0,"paid":62.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0226","mode":"rail","date":"2022-10-25","from":"BER","to":"FRA","price":0,"paid":25.9,"km":545,"ref":"11SD8R","note":""},{"id":"ics0227","mode":"air","date":"2022-10-30","from":"FRA","to":"BER","price":52.04,"paid":52.04,"km":0,"ref":"2202484890052","note":""},{"id":"ics0228","mode":"hotel","date":"2022-11-03","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0229","mode":"rail","date":"2022-11-03","from":"BER","to":"FRA","price":0,"paid":25.9,"km":545,"ref":"6L7NNS","note":""},{"id":"ics0230","mode":"air","date":"2022-11-04","from":"FRA","to":"BER","price":49.04,"paid":49.04,"km":0,"ref":"2202485076005","note":""},{"id":"ics0231","mode":"air","date":"2022-11-15","from":"BER","to":"FRA","price":0,"paid":0,"km":0,"ref":"2202484889611","note":""},{"id":"ics0232","mode":"air","date":"2022-11-19","from":"FRA","to":"BER","price":43.04,"paid":43.04,"km":0,"ref":"2202485871902","note":""},{"id":"ics0233","mode":"rail","date":"2022-11-24","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"NDOZAT","note":""},{"id":"ics0234","mode":"rail","date":"2022-11-28","from":"BER","to":"FRA","price":0,"paid":25.9,"km":545,"ref":"MVBF4P","note":""},{"id":"ics0235","mode":"air","date":"2022-11-29","from":"FRA","to":"BER","price":43.04,"paid":43.04,"km":0,"ref":"2202486266088","note":""},{"id":"ics0236","mode":"rail","date":"2022-11-30","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"YG81FA","note":""},{"id":"ics0237","mode":"hotel","date":"2022-11-30","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0238","mode":"air","date":"2022-12-01","from":"FRA","to":"BER","price":44.62,"paid":44.62,"km":0,"ref":"2202486385852","note":""},{"id":"ics0239","mode":"air","date":"2022-12-04","from":"BER","to":"FRA","price":53.51,"paid":53.51,"km":0,"ref":"2202486420975","note":""},{"id":"ics0240","mode":"rail","date":"2022-12-04","from":"FRA","to":"BER","price":0,"paid":43.9,"km":545,"ref":"UKKS1V","note":""},{"id":"ics0241","mode":"air","date":"2022-12-08","from":"BER","to":"FRA","price":51.93,"paid":51.93,"km":0,"ref":"2202486118982","note":""},{"id":"ics0242","mode":"hotel","date":"2022-12-08","from":"","to":"","price":45.0,"paid":45.0,"km":0,"ref":"","note":"MK"},{"id":"ics0243","mode":"air","date":"2022-12-09","from":"FRA","to":"BER","price":43.04,"paid":43.04,"km":0,"ref":"2202486266109","note":""},{"id":"ics0244","mode":"air","date":"2022-12-14","from":"BER","to":"FRA","price":52.93,"paid":52.93,"km":0,"ref":"2202486705500","note":""},{"id":"ics0245","mode":"rail","date":"2022-12-15","from":"FRA","to":"BER","price":0,"paid":16.9,"km":545,"ref":"7ZPTVG","note":""},{"id":"ics0246","mode":"rail","date":"2022-12-26","from":"Zug Nürnberg","to":"FRA DQ","price":0,"paid":16.9,"km":545,"ref":"DQ4AB6","note":""},{"id":"ics0247","mode":"air","date":"2022-12-29","from":"FRA","to":"BER","price":49.09,"paid":49.09,"km":0,"ref":"2202487325678","note":""},{"id":"ics0248","mode":"hotel","date":"2023-01-02","from":"","to":"","price":62.0,"paid":62.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0249","mode":"car","date":"2023-01-02","from":"Auto BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0250","mode":"car","date":"2023-01-03","from":"Auto FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0251","mode":"air","date":"2023-01-08","from":"BER","to":"FRA","price":53.46,"paid":53.46,"km":0,"ref":"2202484889611","note":""},{"id":"ics0252","mode":"rail","date":"2023-01-12","from":"Zug FRA","to":"Bayreuth K","price":0,"paid":18.9,"km":545,"ref":"K9VNOE","note":""},{"id":"ics0253","mode":"air","date":"2023-01-24","from":"FRA","to":"BER","price":43.63,"paid":43.63,"km":0,"ref":"2202488801264","note":""},{"id":"ics0254","mode":"air","date":"2023-02-05","from":"BER","to":"FRA","price":44.57,"paid":44.57,"km":0,"ref":"2202489279528","note":""},{"id":"ics0255","mode":"rail","date":"2023-02-09","from":"FRA","to":"BER","price":0,"paid":13.4,"km":545,"ref":"SZA4LL","note":""},{"id":"ics0256","mode":"rail","date":"2023-02-15","from":"BER","to":"FRA","price":0,"paid":30.9,"km":545,"ref":"UA6BKM","note":""},{"id":"ics0257","mode":"hotel","date":"2023-02-15","from":"","to":"","price":62.0,"paid":62.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0258","mode":"hotel","date":"2023-02-18","from":"","to":"","price":59.0,"paid":59.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0259","mode":"car","date":"2023-02-19","from":"Auto FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0260","mode":"air","date":"2023-02-27","from":"BER","to":"FRA","price":77.19,"paid":77.19,"km":0,"ref":"2202490762625","note":""},{"id":"ics0261","mode":"hotel","date":"2023-02-27","from":"","to":"","price":50.0,"paid":50.0,"km":0,"ref":"","note":"MK"},{"id":"ics0262","mode":"air","date":"2023-03-01","from":"FRA","to":"BER","price":77.19,"paid":77.19,"km":0,"ref":"2202490762625","note":""},{"id":"ics0263","mode":"air","date":"2023-03-03","from":"BER","to":"FRA","price":80.04,"paid":80.04,"km":0,"ref":"2202490957647","note":""},{"id":"ics0264","mode":"air","date":"2023-03-04","from":"FRA","to":"BER","price":39.63,"paid":39.63,"km":0,"ref":"2202491006462","note":""},{"id":"ics0265","mode":"air","date":"2023-03-06","from":"BER","to":"FRA","price":80.04,"paid":80.04,"km":0,"ref":"2202490947001","note":""},{"id":"ics0266","mode":"air","date":"2023-03-08","from":"FRA","to":"BER","price":80.04,"paid":80.04,"km":0,"ref":"2202490947001","note":""},{"id":"ics0267","mode":"rail","date":"2023-03-12","from":"BER","to":"FRA","price":0,"paid":49.9,"km":545,"ref":"377D3D","note":""},{"id":"ics0268","mode":"air","date":"2023-03-16","from":"FRA","to":"BER","price":80.04,"paid":80.04,"km":0,"ref":"2202490957647","note":""},{"id":"ics0269","mode":"rail","date":"2023-03-21","from":"BER","to":"FRA","price":0,"paid":13.4,"km":545,"ref":"OAMW8S","note":""},{"id":"ics0270","mode":"hotel","date":"2023-03-21","from":"","to":"","price":168.0,"paid":168.0,"km":0,"ref":"","note":"Moxy Kelsterbach"},{"id":"ics0271","mode":"rail","date":"2023-03-24","from":"FRA","to":"BER","price":0,"paid":13.4,"km":545,"ref":"WNCZH8","note":""},{"id":"ics0272","mode":"air","date":"2023-03-28","from":"BER","to":"FRA","price":80.04,"paid":80.04,"km":0,"ref":"2202491884418","note":""},{"id":"ics0273","mode":"air","date":"2023-04-01","from":"FRA","to":"BER","price":80.04,"paid":80.04,"km":0,"ref":"2202491884418","note":""},{"id":"ics0274","mode":"rail","date":"2023-04-10","from":"Zug und Auto Bayreuth","to":"FRA GKFGCL","price":0,"paid":30.9,"km":545,"ref":"GKFGCL","note":""},{"id":"ics0275","mode":"air","date":"2023-04-14","from":"FRA","to":"BER","price":39.63,"paid":39.63,"km":0,"ref":"2202493098872","note":""},{"id":"ics0276","mode":"rail","date":"2023-04-17","from":"BER","to":"FRA","price":0,"paid":22.9,"km":545,"ref":"Z39LKW","note":""},{"id":"ics0277","mode":"rail","date":"2023-04-19","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"EQH2A4","note":""},{"id":"ics0278","mode":"rail","date":"2023-04-23","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"V1U18S","note":""},{"id":"ics0279","mode":"rail","date":"2023-04-26","from":"BER","to":"FRA","price":0,"paid":16.9,"km":545,"ref":"KHFM9H","note":""},{"id":"ics0280","mode":"rail","date":"2023-04-27","from":"","to":"Bayreuth","price":0,"paid":66.6,"km":545,"ref":"6MCSXD","note":"⚠︎ Strecke prüfen"},{"id":"ics0281","mode":"rail","date":"2023-05-01","from":"Bus Bayreuth","to":"FRA","price":0,"paid":18.99,"km":545,"ref":"","note":""},{"id":"ics0282","mode":"hotel","date":"2023-05-01","from":"","to":"","price":67.0,"paid":67.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0283","mode":"air","date":"2023-05-05","from":"FRA","to":"BER","price":80.04,"paid":80.04,"km":0,"ref":"2202493841414","note":""},{"id":"ics0284","mode":"rail","date":"2023-05-07","from":"BER","to":"FRA","price":0,"paid":36.9,"km":545,"ref":"CXROOO","note":""},{"id":"ics0285","mode":"hotel","date":"2023-05-07","from":"","to":"","price":61.0,"paid":61.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0286","mode":"air","date":"2023-05-09","from":"FRA","to":"BER","price":39.63,"paid":39.63,"km":0,"ref":"2202494392292","note":""},{"id":"ics0287","mode":"air","date":"2023-05-15","from":"BER","to":"FRA","price":80.04,"paid":80.04,"km":0,"ref":"2202493841414","note":""},{"id":"ics0288","mode":"hotel","date":"2023-05-15","from":"","to":"","price":71.0,"paid":71.0,"km":0,"ref":"","note":"Moxy"},{"id":"ics0289","mode":"air","date":"2023-05-16","from":"FRA","to":"BER","price":80.04,"paid":80.04,"km":0,"ref":"2202494237365","note":""},{"id":"ics0290","mode":"air","date":"2023-05-18","from":"BER","to":"FRA","price":80.04,"paid":80.04,"km":0,"ref":"2202494597516","note":""},{"id":"ics0291","mode":"air","date":"2023-05-19","from":"FRA","to":"BER","price":80.04,"paid":80.04,"km":0,"ref":"2202494597516","note":""},{"id":"ics0292","mode":"air","date":"2023-05-23","from":"BER","to":"FRA","price":80.04,"paid":80.04,"km":0,"ref":"2202494237365","note":""},{"id":"ics0293","mode":"car","date":"2023-05-27","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0294","mode":"car","date":"2023-07-02","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0295","mode":"air","date":"2023-07-06","from":"FRA","to":"BER","price":45.63,"paid":45.63,"km":0,"ref":"2202497213045","note":""},{"id":"ics0296","mode":"rail","date":"2023-07-14","from":"BER","to":"FRA","price":0,"paid":36.9,"km":545,"ref":"X91VQY","note":""},{"id":"ics0297","mode":"hotel","date":"2023-07-14","from":"","to":"","price":85.0,"paid":85.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0298","mode":"hotel","date":"2023-07-15","from":"","to":"","price":62.0,"paid":62.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0299","mode":"hotel","date":"2023-07-16","from":"","to":"","price":69.0,"paid":69.0,"km":0,"ref":"","note":"Moxy"},{"id":"ics0300","mode":"air","date":"2023-07-19","from":"FRA","to":"BER","price":39.63,"paid":39.63,"km":0,"ref":"2202498005977","note":""},{"id":"ics0301","mode":"rail","date":"2023-07-21","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"SDUBSX","note":""},{"id":"ics0302","mode":"air","date":"2023-07-21","from":"BER","to":"FRA","price":44.57,"paid":44.57,"km":0,"ref":"2202497644571","note":""},{"id":"ics0303","mode":"hotel","date":"2023-07-23","from":"","to":"","price":50.0,"paid":50.0,"km":0,"ref":"","note":"MK"},{"id":"ics0304","mode":"air","date":"2023-07-24","from":"FRA","to":"BER","price":39.63,"paid":39.63,"km":0,"ref":"2202498239200","note":""},{"id":"ics0305","mode":"rail","date":"2023-07-26","from":"BER","to":"FRA","price":0,"paid":18.9,"km":545,"ref":"QP1CAR","note":""},{"id":"ics0306","mode":"hotel","date":"2023-07-26","from":"","to":"","price":64.0,"paid":64.0,"km":0,"ref":"","note":"NH"},{"id":"ics0307","mode":"hotel","date":"2023-07-29","from":"","to":"","price":50.0,"paid":50.0,"km":0,"ref":"","note":"MK"},{"id":"ics0308","mode":"hotel","date":"2023-07-30","from":"","to":"","price":50.0,"paid":50.0,"km":0,"ref":"","note":"MK"},{"id":"ics0309","mode":"rail","date":"2023-07-31","from":"","to":"Bayreuth","price":0,"paid":44.9,"km":545,"ref":"TFQ26K","note":"⚠︎ Strecke prüfen"},{"id":"ics0310","mode":"rail","date":"2023-08-04","from":"","to":"","price":0,"paid":55.9,"km":545,"ref":"PBC6MG","note":"⚠︎ Strecke prüfen"},{"id":"ics0311","mode":"air","date":"2023-08-08","from":"FRA","to":"BER","price":45.63,"paid":45.63,"km":0,"ref":"2499022067","note":""},{"id":"ics0312","mode":"air","date":"2023-08-13","from":"BER","to":"FRA","price":44.57,"paid":44.57,"km":0,"ref":"2202498974351","note":""},{"id":"ics0313","mode":"hotel","date":"2023-08-17","from":"","to":"","price":50.0,"paid":50.0,"km":0,"ref":"","note":"MK"},{"id":"ics0314","mode":"air","date":"2023-08-17","from":"FRA","to":"BER","price":45.63,"paid":45.63,"km":0,"ref":"2202499585714","note":""},{"id":"ics0315","mode":"rail","date":"2023-08-22","from":"BER","to":"FRA","price":0,"paid":18.9,"km":545,"ref":"Y44TXO","note":""},{"id":"ics0316","mode":"hotel","date":"2023-08-22","from":"","to":"","price":69.0,"paid":69.0,"km":0,"ref":"","note":"Moxy"},{"id":"ics0317","mode":"rail","date":"2023-08-25","from":"Bus Frankfurt","to":"Bayreuth","price":0,"paid":17.0,"km":545,"ref":"","note":""},{"id":"ics0318","mode":"rail","date":"2023-08-29","from":"Zug Bayreuth","to":"FRA GFBYZQ","price":0,"paid":20.9,"km":545,"ref":"GFBYZQ","note":""},{"id":"ics0319","mode":"hotel","date":"2023-09-02","from":"","to":"","price":61.0,"paid":61.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0320","mode":"car","date":"2023-09-03","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0321","mode":"car","date":"2023-09-07","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0322","mode":"air","date":"2023-09-08","from":"FRA","to":"BER","price":39.63,"paid":39.63,"km":0,"ref":"2520803804","note":""},{"id":"ics0323","mode":"rail","date":"2023-09-10","from":"BER","to":"FRA","price":0,"paid":55.9,"km":545,"ref":"PQS83S","note":""},{"id":"ics0324","mode":"rail","date":"2023-09-14","from":"FRA","to":"BER","price":0,"paid":13.3,"km":545,"ref":"S4714L","note":""},{"id":"ics0325","mode":"rail","date":"2023-09-17","from":"BER","to":"FRA","price":0,"paid":36.9,"km":545,"ref":"LC2C9R","note":""},{"id":"ics0326","mode":"hotel","date":"2023-09-20","from":"","to":"","price":84.0,"paid":84.0,"km":0,"ref":"","note":"Moxy"},{"id":"ics0327","mode":"car","date":"2023-09-21","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0328","mode":"air","date":"2023-09-26","from":"BER","to":"FRA","price":44.58,"paid":44.58,"km":0,"ref":"2521071695","note":""},{"id":"ics0329","mode":"hotel","date":"2023-09-26","from":"","to":"","price":50.0,"paid":50.0,"km":0,"ref":"","note":"MK"},{"id":"ics0330","mode":"air","date":"2023-09-27","from":"FRA","to":"BER","price":39.63,"paid":39.63,"km":0,"ref":"2521851912","note":""},{"id":"ics0331","mode":"air","date":"2023-10-10","from":"BER","to":"FRA","price":44.57,"paid":44.57,"km":0,"ref":"2520803813","note":""},{"id":"ics0332","mode":"hotel","date":"2023-10-10","from":"","to":"","price":50.0,"paid":50.0,"km":0,"ref":"","note":"MK"},{"id":"ics0333","mode":"air","date":"2023-10-13","from":"FRA","to":"BER","price":39.63,"paid":39.63,"km":0,"ref":"2522731069","note":""},{"id":"ics0334","mode":"air","date":"2023-10-17","from":"BER","to":"FRA","price":44.57,"paid":44.57,"km":0,"ref":"2520803822","note":""},{"id":"ics0335","mode":"air","date":"2023-10-19","from":"FRA","to":"BER","price":39.63,"paid":39.63,"km":0,"ref":"2523084376","note":""},{"id":"ics0336","mode":"air","date":"2023-10-23","from":"FRA","to":"BER","price":44.57,"paid":44.57,"km":0,"ref":"2520803848","note":""},{"id":"ics0337","mode":"air","date":"2023-10-27","from":"FRA","to":"BER","price":45.63,"paid":45.63,"km":0,"ref":"2522829059","note":""},{"id":"ics0338","mode":"hotel","date":"2023-11-01","from":"","to":"","price":67.0,"paid":67.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0339","mode":"air","date":"2023-11-01","from":"BER","to":"FRA","price":49.57,"paid":49.57,"km":0,"ref":"2202523681643","note":""},{"id":"ics0340","mode":"car","date":"2023-11-02","from":"","to":"","price":0,"paid":0,"km":545,"ref":"","note":"⚠︎ Strecke prüfen"},{"id":"ics0341","mode":"rail","date":"2023-11-03","from":"FRA","to":"BER","price":0,"paid":24.9,"km":545,"ref":"911385093790","note":""},{"id":"ics0342","mode":"rail","date":"2023-11-13","from":"BER","to":"FRA","price":0,"paid":36.9,"km":545,"ref":"741130018603","note":""},{"id":"ics0343","mode":"car","date":"2023-11-17","from":"Auto FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0344","mode":"air","date":"2023-11-21","from":"BER","to":"FRA","price":44.57,"paid":44.57,"km":0,"ref":"2522459881","note":""},{"id":"ics0345","mode":"hotel","date":"2023-11-21","from":"","to":"","price":85.0,"paid":85.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0346","mode":"air","date":"2023-11-24","from":"FRA","to":"BER","price":39.63,"paid":39.63,"km":0,"ref":"2524890343","note":""},{"id":"ics0347","mode":"air","date":"2023-12-05","from":"BER","to":"FRA","price":49.57,"paid":49.57,"km":0,"ref":"2525590483","note":""},{"id":"ics0348","mode":"car","date":"2023-12-06","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0349","mode":"rail","date":"2023-12-11","from":"BER","to":"FRA","price":0,"paid":14.9,"km":545,"ref":"693711556940","note":""},{"id":"ics0350","mode":"hotel","date":"2023-12-14","from":"","to":"","price":67.0,"paid":67.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0351","mode":"air","date":"2023-12-15","from":"FRA","to":"BER","price":39.63,"paid":39.63,"km":0,"ref":"2526106267","note":""},{"id":"ics0352","mode":"hotel","date":"2023-12-17","from":"","to":"","price":128.0,"paid":128.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0353","mode":"rail","date":"2023-12-17","from":"BER","to":"FRA","price":0,"paid":13.4,"km":545,"ref":"127378860242","note":""},{"id":"ics0354","mode":"rail","date":"2023-12-19","from":"FRA","to":"BER","price":0,"paid":13.4,"km":545,"ref":"710431254205","note":""},{"id":"ics0355","mode":"air","date":"2024-01-22","from":"BER","to":"FRA","price":45.18,"paid":45.18,"km":0,"ref":"2526920661","note":""},{"id":"ics0356","mode":"hotel","date":"2024-01-22","from":"","to":"","price":67.0,"paid":67.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0357","mode":"hotel","date":"2024-01-23","from":"","to":"","price":95.0,"paid":95.0,"km":0,"ref":"","note":"Moxy"},{"id":"ics0358","mode":"air","date":"2024-01-30","from":"BER","to":"FRA","price":45.18,"paid":45.18,"km":0,"ref":"2526920674","note":""},{"id":"ics0359","mode":"air","date":"2024-01-31","from":"FRA","to":"BER","price":42.13,"paid":42.13,"km":0,"ref":"2528856921","note":""},{"id":"ics0360","mode":"rail","date":"2024-02-06","from":"FRA","to":"BER","price":0,"paid":46.9,"km":545,"ref":"552985154195","note":""},{"id":"ics0361","mode":"air","date":"2024-02-06","from":"BER","to":"FRA","price":45.18,"paid":45.18,"km":0,"ref":"2527411616","note":""},{"id":"ics0362","mode":"air","date":"2024-02-11","from":"BER","to":"FRA","price":45.18,"paid":45.18,"km":0,"ref":"2202527411610","note":""},{"id":"ics0363","mode":"air","date":"2024-02-15","from":"FRA","to":"BER","price":45.33,"paid":45.33,"km":0,"ref":"2529883254","note":""},{"id":"ics0364","mode":"rail","date":"2024-02-19","from":"BER","to":"FRA","price":0,"paid":46.9,"km":545,"ref":"285689373074","note":""},{"id":"ics0365","mode":"hotel","date":"2024-02-19","from":"","to":"","price":74.0,"paid":74.0,"km":0,"ref":"","note":"Moxy"},{"id":"ics0366","mode":"hotel","date":"2024-02-20","from":"","to":"","price":74.0,"paid":74.0,"km":0,"ref":"","note":"Moxy"},{"id":"ics0367","mode":"rail","date":"2024-02-21","from":"FRA","to":"BER","price":0,"paid":46.9,"km":545,"ref":"425362097575","note":""},{"id":"ics0368","mode":"car","date":"2024-02-26","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0369","mode":"car","date":"2024-02-28","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0370","mode":"air","date":"2024-03-05","from":"BER","to":"FRA","price":45.18,"paid":45.18,"km":0,"ref":"2529343436","note":""},{"id":"ics0371","mode":"air","date":"2024-03-05","from":"FRA","to":"BER","price":45.33,"paid":45.33,"km":0,"ref":"2201114194","note":""},{"id":"ics0372","mode":"air","date":"2024-03-10","from":"BER","to":"FRA","price":45.18,"paid":45.18,"km":0,"ref":"2529343446","note":""},{"id":"ics0373","mode":"hotel","date":"2024-03-14","from":"","to":"","price":67.0,"paid":67.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0374","mode":"air","date":"2024-03-15","from":"FRA","to":"BER","price":45.33,"paid":45.33,"km":0,"ref":"2201525972","note":""},{"id":"ics0375","mode":"air","date":"2024-03-18","from":"BER","to":"FRA","price":90.5,"paid":90.5,"km":0,"ref":"2201750828","note":""},{"id":"ics0376","mode":"air","date":"2024-03-18","from":"FRA","to":"BER","price":90.5,"paid":90.5,"km":0,"ref":"2201750828","note":""},{"id":"ics0377","mode":"air","date":"2024-04-16","from":"BER","to":"FRA","price":90.4,"paid":90.4,"km":0,"ref":"2203314361","note":""},{"id":"ics0378","mode":"air","date":"2024-04-16","from":"FRA","to":"BER","price":90.4,"paid":90.4,"km":0,"ref":"2203314361","note":""},{"id":"ics0379","mode":"rail","date":"2024-04-22","from":"BER","to":"FRA","price":0,"paid":26.9,"km":545,"ref":"478675403808","note":""},{"id":"ics0380","mode":"air","date":"2024-04-26","from":"FRA","to":"BER","price":43.28,"paid":43.28,"km":0,"ref":"2203865271","note":""},{"id":"ics0381","mode":"car","date":"2024-04-29","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0382","mode":"car","date":"2024-04-30","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0383","mode":"air","date":"2024-05-07","from":"BER","to":"FRA","price":97.66,"paid":97.66,"km":0,"ref":"2203314390","note":""},{"id":"ics0384","mode":"hotel","date":"2024-05-07","from":"","to":"","price":55.0,"paid":55.0,"km":0,"ref":"","note":"MK"},{"id":"ics0385","mode":"air","date":"2024-05-10","from":"FRA","to":"BER","price":48.91,"paid":48.91,"km":0,"ref":"2204814016","note":""},{"id":"ics0386","mode":"car","date":"2024-05-13","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0387","mode":"car","date":"2024-05-14","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0388","mode":"air","date":"2024-05-15","from":"BER","to":"FRA","price":94.66,"paid":94.66,"km":0,"ref":"2205184356","note":""},{"id":"ics0389","mode":"air","date":"2024-05-16","from":"FRA","to":"BER","price":94.66,"paid":94.66,"km":0,"ref":"2205184356","note":""},{"id":"ics0390","mode":"air","date":"2024-05-21","from":"BER","to":"FRA","price":97.66,"paid":97.66,"km":0,"ref":"2204190983","note":""},{"id":"ics0391","mode":"hotel","date":"2024-05-21","from":"","to":"","price":55.0,"paid":55.0,"km":0,"ref":"","note":"MK"},{"id":"ics0392","mode":"air","date":"2024-05-23","from":"FRA","to":"BER","price":97.66,"paid":97.66,"km":0,"ref":"2204190983","note":""},{"id":"ics0393","mode":"rail","date":"2024-05-26","from":"BER","to":"FRA","price":0,"paid":46.9,"km":545,"ref":"859380196569","note":""},{"id":"ics0394","mode":"hotel","date":"2024-05-26","from":"","to":"","price":61.0,"paid":61.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0395","mode":"air","date":"2024-05-31","from":"FRA","to":"BER","price":97.66,"paid":97.66,"km":0,"ref":"2203314390","note":""},{"id":"ics0396","mode":"car","date":"2024-06-03","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0397","mode":"car","date":"2024-06-04","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0398","mode":"air","date":"2024-06-12","from":"BER","to":"FRA","price":97.66,"paid":97.66,"km":0,"ref":"2205899085","note":""},{"id":"ics0399","mode":"air","date":"2024-06-15","from":"FRA","to":"BER","price":97.66,"paid":97.66,"km":0,"ref":"2205899085","note":""},{"id":"ics0400","mode":"air","date":"2024-06-25","from":"BER","to":"FRA","price":97.66,"paid":97.66,"km":0,"ref":"2205899101","note":""},{"id":"ics0401","mode":"hotel","date":"2024-06-25","from":"","to":"","price":68.0,"paid":68.0,"km":0,"ref":"","note":"Goldene Ente Mainz"},{"id":"ics0402","mode":"hotel","date":"2024-06-26","from":"","to":"","price":55.0,"paid":55.0,"km":0,"ref":"","note":"MK"},{"id":"ics0403","mode":"air","date":"2024-07-02","from":"FRA","to":"BER","price":95.66,"paid":95.66,"km":0,"ref":"2207625938","note":""},{"id":"ics0404","mode":"air","date":"2024-07-02","from":"BER","to":"FRA","price":95.66,"paid":95.66,"km":0,"ref":"2207625938","note":""},{"id":"ics0405","mode":"air","date":"2024-07-09","from":"BER","to":"FRA","price":86.44,"paid":86.44,"km":0,"ref":"2208413986","note":""},{"id":"ics0406","mode":"hotel","date":"2024-07-09","from":"","to":"","price":95.0,"paid":95.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0407","mode":"hotel","date":"2024-07-10","from":"","to":"","price":55.0,"paid":55.0,"km":0,"ref":"","note":"MK"},{"id":"ics0408","mode":"rail","date":"2024-07-11","from":"FRA","to":"BER","price":0,"paid":43.99,"km":545,"ref":"806201238427","note":""},{"id":"ics0409","mode":"hotel","date":"2024-07-16","from":"","to":"","price":67.0,"paid":67.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0410","mode":"air","date":"2024-07-17","from":"BER","to":"FRA","price":97.66,"paid":97.66,"km":0,"ref":"2208414472","note":""},{"id":"ics0411","mode":"air","date":"2024-07-20","from":"","to":"","price":97.66,"paid":97.66,"km":0,"ref":"2208414472","note":""},{"id":"ics0412","mode":"rail","date":"2024-07-23","from":"BER","to":"FRA","price":0,"paid":36.99,"km":545,"ref":"407334549886","note":""},{"id":"ics0413","mode":"rail","date":"2024-07-30","from":"BER","to":"FRA","price":0,"paid":13.49,"km":545,"ref":"208039337545","note":""},{"id":"ics0414","mode":"hotel","date":"2024-08-03","from":"","to":"","price":61.0,"paid":61.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0415","mode":"air","date":"2024-08-04","from":"FRA","to":"BER","price":49.91,"paid":49.91,"km":0,"ref":"2210023896","note":""},{"id":"ics0416","mode":"air","date":"2024-08-06","from":"BER","to":"FRA","price":96.66,"paid":96.66,"km":0,"ref":"2209310728","note":""},{"id":"ics0417","mode":"hotel","date":"2024-08-06","from":"","to":"","price":67.0,"paid":67.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0418","mode":"air","date":"2024-08-10","from":"FRA","to":"BER","price":97.66,"paid":97.66,"km":0,"ref":"2209310728","note":""},{"id":"ics0419","mode":"air","date":"2024-08-14","from":"FRA","to":"BER","price":97.66,"paid":97.66,"km":0,"ref":"2210173619","note":""},{"id":"ics0420","mode":"air","date":"2024-08-14","from":"BER","to":"FRA","price":97.66,"paid":97.66,"km":0,"ref":"2210173619","note":""},{"id":"ics0421","mode":"air","date":"2024-08-19","from":"BER","to":"FRA","price":97.66,"paid":97.66,"km":0,"ref":"2209557675","note":""},{"id":"ics0422","mode":"air","date":"2024-08-19","from":"FRA","to":"BER","price":97.66,"paid":97.66,"km":0,"ref":"2209557675","note":""},{"id":"ics0423","mode":"car","date":"2024-09-08","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0424","mode":"hotel","date":"2024-09-09","from":"","to":"","price":55.0,"paid":55.0,"km":0,"ref":"","note":"MK"},{"id":"ics0425","mode":"car","date":"2024-09-11","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0426","mode":"car","date":"2024-09-13","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0427","mode":"car","date":"2024-09-14","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0428","mode":"air","date":"2024-09-17","from":"BER","to":"FRA","price":50.28,"paid":50.28,"km":0,"ref":"2212359128","note":""},{"id":"ics0429","mode":"hotel","date":"2024-09-17","from":"","to":"","price":101.0,"paid":101.0,"km":0,"ref":"","note":"Sheraton"},{"id":"ics0430","mode":"air","date":"2024-09-20","from":"FRA","to":"BER","price":42.91,"paid":42.91,"km":0,"ref":"2212957063","note":""},{"id":"ics0431","mode":"car","date":"2024-09-25","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0432","mode":"hotel","date":"2024-09-27","from":"","to":"","price":99.0,"paid":99.0,"km":0,"ref":"","note":"Sheraton"},{"id":"ics0433","mode":"car","date":"2024-09-28","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0434","mode":"air","date":"2024-10-08","from":"BER","to":"FRA","price":94.66,"paid":94.66,"km":0,"ref":"2213782629","note":""},{"id":"ics0435","mode":"hotel","date":"2024-10-08","from":"","to":"","price":117.0,"paid":117.0,"km":0,"ref":"","note":"Mocy Kelsterbach"},{"id":"ics0436","mode":"air","date":"2024-10-09","from":"FRA","to":"BER","price":94.66,"paid":94.66,"km":0,"ref":"2213782629","note":""},{"id":"ics0437","mode":"air","date":"2024-10-15","from":"","to":"","price":52.76,"paid":52.76,"km":0,"ref":"2214250826","note":""},{"id":"ics0438","mode":"hotel","date":"2024-10-15","from":"","to":"","price":101.0,"paid":101.0,"km":0,"ref":"","note":"Sheraton"},{"id":"ics0439","mode":"car","date":"2024-10-17","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0440","mode":"car","date":"2024-10-21","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0441","mode":"air","date":"2024-10-24","from":"FRA","to":"BER","price":41.91,"paid":41.91,"km":0,"ref":"2214847241","note":""},{"id":"ics0442","mode":"air","date":"2024-10-28","from":"BER","to":"FRA","price":94.66,"paid":94.66,"km":0,"ref":"2214802741","note":""},{"id":"ics0443","mode":"air","date":"2024-11-01","from":"FRA","to":"BER","price":94.66,"paid":94.66,"km":0,"ref":"2214802741","note":""},{"id":"ics0444","mode":"hotel","date":"2024-11-05","from":"","to":"","price":101.0,"paid":101.0,"km":0,"ref":"","note":"Sheraton"},{"id":"ics0445","mode":"air","date":"2024-11-05","from":"BER","to":"FRA","price":94.66,"paid":94.66,"km":0,"ref":"2215225652","note":""},{"id":"ics0446","mode":"air","date":"2024-11-08","from":"FRA","to":"BER","price":94.66,"paid":94.66,"km":0,"ref":"2215225652","note":""},{"id":"ics0447","mode":"air","date":"2024-11-19","from":"BER","to":"FRA","price":84.66,"paid":84.66,"km":0,"ref":"2216123993","note":""},{"id":"ics0448","mode":"hotel","date":"2024-11-19","from":"","to":"","price":97.0,"paid":97.0,"km":0,"ref":"","note":"Moxy"},{"id":"ics0449","mode":"air","date":"2024-11-23","from":"FRA","to":"BER","price":84.66,"paid":84.66,"km":0,"ref":"2216123993","note":""},{"id":"ics0450","mode":"rail","date":"2024-11-27","from":"BER","to":"FRA","price":0,"paid":26.99,"km":545,"ref":"285817552472","note":""},{"id":"ics0451","mode":"air","date":"2024-11-29","from":"FRA","to":"BER","price":42.91,"paid":42.91,"km":0,"ref":"2216673510","note":""},{"id":"ics0452","mode":"air","date":"2024-12-04","from":"BER","to":"FRA","price":96.67,"paid":96.67,"km":0,"ref":"2216451287","note":""},{"id":"ics0453","mode":"air","date":"2024-12-07","from":"FRA","to":"BER","price":96.66,"paid":96.66,"km":0,"ref":"2216451287","note":""},{"id":"ics0454","mode":"air","date":"2024-12-16","from":"FRA","to":"BER","price":84.66,"paid":84.66,"km":0,"ref":"2217214582","note":""},{"id":"ics0455","mode":"hotel","date":"2024-12-16","from":"","to":"","price":69.0,"paid":69.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0456","mode":"hotel","date":"2024-12-17","from":"","to":"","price":79.0,"paid":79.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0457","mode":"air","date":"2024-12-19","from":"BER","to":"FRA","price":84.66,"paid":84.66,"km":0,"ref":"2217214582","note":""},{"id":"ics0458","mode":"rail","date":"2024-12-27","from":"BER","to":"FRA","price":0,"paid":18.99,"km":545,"ref":"450568287662","note":""},{"id":"ics0459","mode":"hotel","date":"2024-12-29","from":"","to":"","price":55.0,"paid":55.0,"km":0,"ref":"","note":"MK"},{"id":"ics0460","mode":"air","date":"2024-12-31","from":"FRA","to":"BER","price":48.91,"paid":48.91,"km":0,"ref":"2215627289","note":""},{"id":"ics0461","mode":"air","date":"2025-01-07","from":"BER","to":"FRA","price":52.16,"paid":52.16,"km":0,"ref":"2218440703","note":""},{"id":"ics0462","mode":"hotel","date":"2025-01-07","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0463","mode":"hotel","date":"2025-01-08","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0464","mode":"hotel","date":"2025-01-09","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0465","mode":"rail","date":"2025-01-10","from":"","to":"Bayreuth","price":0,"paid":17.99,"km":545,"ref":"364060581363","note":"⚠︎ Strecke prüfen"},{"id":"ics0466","mode":"air","date":"2025-01-21","from":"BER","to":"FRA","price":100.27,"paid":100.27,"km":0,"ref":"2219315402","note":""},{"id":"ics0467","mode":"hotel","date":"2025-01-21","from":"","to":"","price":65.31,"paid":65.31,"km":0,"ref":"","note":"Design Hotel Maastricht"},{"id":"ics0468","mode":"air","date":"2025-01-23","from":"FRA","to":"BER","price":100.27,"paid":100.27,"km":0,"ref":"2219315402","note":""},{"id":"ics0469","mode":"air","date":"2025-01-29","from":"BER","to":"FRA","price":99.27,"paid":99.27,"km":0,"ref":"2218047912","note":""},{"id":"ics0470","mode":"air","date":"2025-01-31","from":"FRA","to":"BER","price":99.27,"paid":99.27,"km":0,"ref":"2218047912","note":""},{"id":"ics0471","mode":"air","date":"2025-02-04","from":"BER","to":"FRA","price":87.27,"paid":87.27,"km":0,"ref":"2220017670","note":""},{"id":"ics0472","mode":"air","date":"2025-02-04","from":"FRA","to":"BER","price":87.27,"paid":87.27,"km":0,"ref":"2220017670","note":""},{"id":"ics0473","mode":"air","date":"2025-02-11","from":"BER","to":"FRA","price":100.27,"paid":100.27,"km":0,"ref":"2220017773","note":""},{"id":"ics0474","mode":"air","date":"2025-02-15","from":"FRA","to":"BER","price":100.27,"paid":100.27,"km":0,"ref":"2220017773","note":""},{"id":"ics0475","mode":"hotel","date":"2025-02-17","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0476","mode":"air","date":"2025-02-17","from":"BER","to":"FRA","price":87.27,"paid":87.27,"km":0,"ref":"2220134964","note":""},{"id":"ics0477","mode":"hotel","date":"2025-02-18","from":"","to":"","price":107.0,"paid":107.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0478","mode":"air","date":"2025-02-21","from":"FRA","to":"BER","price":87.27,"paid":87.27,"km":0,"ref":"2220134964","note":""},{"id":"ics0479","mode":"air","date":"2025-02-25","from":"BER","to":"FRA","price":100.27,"paid":100.27,"km":0,"ref":"2220753856","note":""},{"id":"ics0480","mode":"air","date":"2025-02-26","from":"FRA","to":"BER","price":100.27,"paid":100.27,"km":0,"ref":"2220753856","note":""},{"id":"ics0481","mode":"air","date":"2025-03-04","from":"BER","to":"FRA","price":87.27,"paid":87.27,"km":0,"ref":"2221745865","note":""},{"id":"ics0482","mode":"hotel","date":"2025-03-04","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0483","mode":"air","date":"2025-03-08","from":"FRA","to":"BER","price":87.27,"paid":87.27,"km":0,"ref":"2221745865","note":""},{"id":"ics0484","mode":"rail","date":"2025-03-12","from":"BER","to":"FRA","price":0,"paid":18.99,"km":545,"ref":"558289895665","note":""},{"id":"ics0485","mode":"air","date":"2025-03-14","from":"FRA","to":"BER","price":45.12,"paid":45.12,"km":0,"ref":"2221745895","note":""},{"id":"ics0486","mode":"air","date":"2025-03-18","from":"BER","to":"FRA","price":87.27,"paid":87.27,"km":0,"ref":"2222577298","note":""},{"id":"ics0487","mode":"air","date":"2025-03-18","from":"FRA","to":"BER","price":87.27,"paid":87.27,"km":0,"ref":"2222577298","note":""},{"id":"ics0488","mode":"air","date":"2025-03-25","from":"BER","to":"FRA","price":42.16,"paid":42.16,"km":0,"ref":"2223042409","note":""},{"id":"ics0489","mode":"rail","date":"2025-03-28","from":"Zug FRA","to":"Bayreuth","price":0,"paid":22.99,"km":545,"ref":"659150789183","note":""},{"id":"ics0490","mode":"air","date":"2025-04-01","from":"BER","to":"FRA","price":87.27,"paid":87.27,"km":0,"ref":"2223538713","note":""},{"id":"ics0491","mode":"hotel","date":"2025-04-01","from":"","to":"","price":100.0,"paid":100.0,"km":0,"ref":"","note":"Moxy"},{"id":"ics0492","mode":"air","date":"2025-04-03","from":"FRA","to":"BER","price":87.27,"paid":87.27,"km":0,"ref":"2223538713","note":""},{"id":"ics0493","mode":"rail","date":"2025-04-09","from":"BER","to":"FRA","price":0,"paid":17.99,"km":545,"ref":"592105402926","note":""},{"id":"ics0494","mode":"air","date":"2025-04-11","from":"FRA","to":"BER","price":0,"paid":0,"km":0,"ref":"2223993429","note":""},{"id":"ics0495","mode":"rail","date":"2025-04-20","from":"Zug Bayreuth","to":"FRA","price":0,"paid":17.9,"km":545,"ref":"852311571538","note":""},{"id":"ics0496","mode":"air","date":"2025-04-24","from":"FRA","to":"BER","price":101.3,"paid":101.3,"km":0,"ref":"2224758975","note":""},{"id":"ics0497","mode":"air","date":"2025-05-13","from":"BER","to":"FRA","price":101.3,"paid":101.3,"km":0,"ref":"2224758975","note":""},{"id":"ics0498","mode":"hotel","date":"2025-05-15","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0499","mode":"car","date":"2025-05-16","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0500","mode":"air","date":"2025-05-18","from":"FRA","to":"BER","price":51.13,"paid":51.13,"km":0,"ref":"2225743732","note":""},{"id":"ics0501","mode":"air","date":"2025-05-20","from":"BER","to":"FRA","price":42.17,"paid":42.17,"km":0,"ref":"2226018505","note":""},{"id":"ics0502","mode":"car","date":"2025-05-23","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0503","mode":"hotel","date":"2025-05-29","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0504","mode":"air","date":"2025-05-30","from":"FRA","to":"BER","price":45.13,"paid":45.13,"km":0,"ref":"2226808885","note":""},{"id":"ics0505","mode":"air","date":"2025-06-03","from":"BER","to":"FRA","price":85.3,"paid":85.3,"km":0,"ref":"2226994770","note":""},{"id":"ics0506","mode":"air","date":"2025-06-03","from":"FRA","to":"BER","price":85.3,"paid":85.3,"km":0,"ref":"2226994770","note":""},{"id":"ics0507","mode":"air","date":"2025-06-11","from":"BER","to":"FRA","price":47.17,"paid":47.17,"km":0,"ref":"2226994748","note":""},{"id":"ics0508","mode":"air","date":"2025-06-14","from":"BER","to":"FRA","price":44.13,"paid":44.13,"km":0,"ref":"2227558348","note":""},{"id":"ics0509","mode":"air","date":"2025-07-02","from":"BER","to":"FRA","price":42.17,"paid":42.17,"km":0,"ref":"2228680854","note":""},{"id":"ics0510","mode":"air","date":"2025-07-03","from":"FRA","to":"BER","price":101.3,"paid":101.3,"km":0,"ref":"2228468491","note":""},{"id":"ics0511","mode":"air","date":"2025-07-06","from":"FRA","to":"BER","price":101.3,"paid":101.3,"km":0,"ref":"2228468491","note":""},{"id":"ics0512","mode":"air","date":"2025-07-15","from":"FRA","to":"BER","price":85.3,"paid":85.3,"km":0,"ref":"2229424153","note":""},{"id":"ics0513","mode":"air","date":"2025-07-15","from":"BER","to":"FRA","price":85.3,"paid":85.3,"km":0,"ref":"2229424153","note":""},{"id":"ics0514","mode":"rail","date":"2025-07-27","from":"BER","to":"FRA","price":0,"paid":18.99,"km":545,"ref":"614172627979","note":""},{"id":"ics0515","mode":"hotel","date":"2025-07-28","from":"","to":"","price":61.0,"paid":61.0,"km":0,"ref":"","note":"Moxy"},{"id":"ics0516","mode":"rail","date":"2025-07-30","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"332388950049","note":""},{"id":"ics0517","mode":"hotel","date":"2025-08-05","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0518","mode":"air","date":"2025-08-05","from":"BER","to":"FRA","price":47.17,"paid":47.17,"km":0,"ref":"2230686163","note":""},{"id":"ics0519","mode":"car","date":"2025-08-08","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0520","mode":"rail","date":"2025-08-12","from":"BER","to":"FRA","price":0,"paid":36.99,"km":545,"ref":"303414992100","note":""},{"id":"ics0521","mode":"hotel","date":"2025-08-12","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0522","mode":"hotel","date":"2025-08-13","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0523","mode":"air","date":"2025-08-14","from":"FRA","to":"BER","price":50.13,"paid":50.13,"km":0,"ref":"2230193170","note":""},{"id":"ics0524","mode":"air","date":"2025-08-19","from":"BER","to":"FRA","price":101.3,"paid":101.3,"km":0,"ref":"2228718249","note":""},{"id":"ics0525","mode":"hotel","date":"2025-08-19","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0526","mode":"air","date":"2025-08-24","from":"FRA","to":"BER","price":84.3,"paid":84.3,"km":0,"ref":"2231746080","note":""},{"id":"ics0527","mode":"air","date":"2025-08-25","from":"BER","to":"FRA","price":84.3,"paid":84.3,"km":0,"ref":"2231746080","note":""},{"id":"ics0528","mode":"air","date":"2025-08-25","from":"FRA","to":"BER","price":50.13,"paid":50.13,"km":0,"ref":"2231491756","note":""},{"id":"ics0529","mode":"air","date":"2025-09-01","from":"BER","to":"FRA","price":100.3,"paid":100.3,"km":0,"ref":"2231954678","note":""},{"id":"ics0530","mode":"hotel","date":"2025-09-01","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0531","mode":"hotel","date":"2025-09-02","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0532","mode":"air","date":"2025-09-04","from":"FRA","to":"BER","price":100.3,"paid":100.3,"km":0,"ref":"2231954678","note":""},{"id":"ics0533","mode":"air","date":"2025-10-06","from":"BER","to":"FRA","price":41.17,"paid":41.17,"km":0,"ref":"2234002932","note":""},{"id":"ics0534","mode":"hotel","date":"2025-10-06","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0535","mode":"hotel","date":"2025-10-07","from":"","to":"","price":97.0,"paid":97.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0536","mode":"air","date":"2025-10-10","from":"FRA","to":"BER","price":101.3,"paid":101.3,"km":0,"ref":"2234115545","note":""},{"id":"ics0537","mode":"rail","date":"2025-10-15","from":"BER","to":"FRA","price":0,"paid":26.99,"km":545,"ref":"827015320303","note":""},{"id":"ics0538","mode":"car","date":"2025-10-17","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0539","mode":"car","date":"2025-10-20","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0540","mode":"hotel","date":"2025-10-21","from":"","to":"","price":97.0,"paid":97.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0541","mode":"air","date":"2025-10-22","from":"FRA","to":"BER","price":101.3,"paid":101.3,"km":0,"ref":"2234717251","note":""},{"id":"ics0542","mode":"air","date":"2025-10-28","from":"BER","to":"FRA","price":101.3,"paid":101.3,"km":0,"ref":"2234115545","note":""},{"id":"ics0543","mode":"rail","date":"2025-11-01","from":"FRA","to":"BER","price":0,"paid":46.99,"km":545,"ref":"857674409011","note":""},{"id":"ics0544","mode":"air","date":"2025-11-04","from":"FRA","to":"BER","price":50.13,"paid":50.13,"km":0,"ref":"2235703429","note":""},{"id":"ics0545","mode":"air","date":"2025-11-04","from":"BER","to":"FRA","price":41.17,"paid":41.17,"km":0,"ref":"2235546827","note":""},{"id":"ics0546","mode":"rail","date":"2025-11-10","from":"BER","to":"FRA","price":0,"paid":36.99,"km":545,"ref":"827100038351","note":""},{"id":"ics0547","mode":"rail","date":"2025-11-16","from":"FRA","to":"BER","price":0,"paid":26.99,"km":545,"ref":"261557960322","note":""},{"id":"ics0548","mode":"hotel","date":"2025-11-18","from":"","to":"","price":97.0,"paid":97.0,"km":0,"ref":"","note":"Moxy"},{"id":"ics0549","mode":"air","date":"2025-11-18","from":"BER","to":"FRA","price":101.3,"paid":101.3,"km":0,"ref":"2236250051","note":""},{"id":"ics0550","mode":"air","date":"2025-11-19","from":"FRA","to":"BER","price":101.3,"paid":101.3,"km":0,"ref":"2236250051","note":""},{"id":"ics0551","mode":"air","date":"2025-11-24","from":"BER","to":"FRA","price":101.3,"paid":101.3,"km":0,"ref":"2234717251","note":""},{"id":"ics0552","mode":"car","date":"2025-11-27","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0553","mode":"rail","date":"2025-12-08","from":"BER","to":"FRA","price":0,"paid":26.99,"km":545,"ref":"910903855548","note":""},{"id":"ics0554","mode":"hotel","date":"2025-12-08","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0555","mode":"air","date":"2025-12-11","from":"FRA","to":"BER","price":50.13,"paid":50.13,"km":0,"ref":"2235834127","note":""},{"id":"ics0556","mode":"hotel","date":"2025-12-16","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0557","mode":"car","date":"2025-12-16","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0558","mode":"hotel","date":"2025-12-17","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0559","mode":"air","date":"2025-12-18","from":"FRA","to":"BER","price":50.13,"paid":50.13,"km":0,"ref":"2235858138","note":""},{"id":"ics0560","mode":"car","date":"2025-12-21","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0561","mode":"car","date":"2025-12-22","from":"Auto FRA","to":"Bayreuth","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0562","mode":"rail","date":"2025-12-27","from":"Zug Bayreuth","to":"FRA","price":0,"paid":26.99,"km":545,"ref":"998700466164","note":""},{"id":"ics0563","mode":"air","date":"2025-12-30","from":"FRA","to":"BER","price":50.13,"paid":50.13,"km":0,"ref":"2235858148","note":""},{"id":"ics0564","mode":"rail","date":"2026-01-04","from":"BER","to":"FRA","price":0,"paid":36.99,"km":545,"ref":"164818132724","note":""},{"id":"ics0565","mode":"air","date":"2026-01-06","from":"FRA","to":"BER","price":42.99,"paid":42.99,"km":0,"ref":"2238094911","note":""},{"id":"ics0566","mode":"air","date":"2026-01-20","from":"BER","to":"FRA","price":95.7,"paid":95.7,"km":0,"ref":"2238094959","note":""},{"id":"ics0567","mode":"air","date":"2026-01-20","from":"FRA","to":"BER","price":95.7,"paid":95.7,"km":0,"ref":"2238094959","note":""},{"id":"ics0568","mode":"air","date":"2026-01-28","from":"BER","to":"FRA","price":95.7,"paid":95.7,"km":0,"ref":"2238094978","note":""},{"id":"ics0569","mode":"air","date":"2026-01-30","from":"FRA","to":"BER","price":95.7,"paid":95.7,"km":0,"ref":"2238094978","note":""},{"id":"ics0570","mode":"hotel","date":"2026-02-03","from":"","to":"","price":77.0,"paid":77.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0571","mode":"air","date":"2026-02-03","from":"BER","to":"FRA","price":83.7,"paid":83.7,"km":0,"ref":"2238360721","note":""},{"id":"ics0572","mode":"air","date":"2026-02-04","from":"FRA","to":"BER","price":73.99,"paid":73.99,"km":0,"ref":"2238875962","note":""},{"id":"ics0573","mode":"rail","date":"2026-02-12","from":"BER","to":"FRA","price":0,"paid":26.99,"km":545,"ref":"174242099256","note":""},{"id":"ics0574","mode":"car","date":"2026-02-13","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0575","mode":"rail","date":"2026-02-17","from":"BER","to":"FRA","price":0,"paid":18.99,"km":545,"ref":"910557709151","note":""},{"id":"ics0576","mode":"air","date":"2026-02-19","from":"FRA","to":"BER","price":73.99,"paid":73.99,"km":0,"ref":"2241620595","note":""},{"id":"ics0577","mode":"air","date":"2026-02-23","from":"BER","to":"FRA","price":83.7,"paid":83.7,"km":0,"ref":"2238360751","note":""},{"id":"ics0578","mode":"hotel","date":"2026-02-23","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0579","mode":"hotel","date":"2026-02-24","from":"","to":"","price":62.0,"paid":62.0,"km":0,"ref":"","note":"Zleep Kelsterbach"},{"id":"ics0580","mode":"rail","date":"2026-02-27","from":"FRA","to":"BER","price":0,"paid":26.99,"km":545,"ref":"522083122284","note":""},{"id":"ics0581","mode":"air","date":"2026-03-03","from":"BER","to":"FRA","price":102.7,"paid":102.7,"km":0,"ref":"2242286621","note":""},{"id":"ics0582","mode":"hotel","date":"2026-03-03","from":"","to":"","price":62.0,"paid":62.0,"km":0,"ref":"","note":"Zleep Kelsterbach"},{"id":"ics0583","mode":"hotel","date":"2026-03-04","from":"","to":"","price":62.0,"paid":62.0,"km":0,"ref":"","note":"Zleep Kelsterbach"},{"id":"ics0584","mode":"air","date":"2026-03-05","from":"FRA","to":"BER","price":83.7,"paid":83.7,"km":0,"ref":"2238360721","note":""},{"id":"ics0585","mode":"air","date":"2026-03-10","from":"BER","to":"FRA","price":46.71,"paid":46.71,"km":0,"ref":"2240675666","note":""},{"id":"ics0586","mode":"air","date":"2026-03-13","from":"FRA","to":"BER","price":102.7,"paid":102.7,"km":0,"ref":"2243179625","note":""},{"id":"ics0587","mode":"rail","date":"2026-03-24","from":"BER","to":"FRA","price":0,"paid":26.99,"km":545,"ref":"278481758083","note":""},{"id":"ics0588","mode":"hotel","date":"2026-03-28","from":"","to":"","price":6.3,"paid":6.3,"km":0,"ref":"","note":"Mövenbick"},{"id":"ics0589","mode":"air","date":"2026-03-29","from":"FRA","to":"BER","price":83.7,"paid":83.7,"km":0,"ref":"2238360751","note":""},{"id":"ics0590","mode":"car","date":"2026-03-31","from":"BER","to":"FRA","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0591","mode":"car","date":"2026-04-02","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0592","mode":"rail","date":"2026-04-07","from":"Bahn Bayreuth","to":"FRA","price":0,"paid":30.99,"km":545,"ref":"862418689054","note":""},{"id":"ics0593","mode":"hotel","date":"2026-04-07","from":"","to":"","price":67.0,"paid":67.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0594","mode":"air","date":"2026-04-09","from":"FRA","to":"BER","price":102.7,"paid":102.7,"km":0,"ref":"2242286621","note":""},{"id":"ics0595","mode":"rail","date":"2026-04-13","from":"BER","to":"FRA","price":0,"paid":24.99,"km":545,"ref":"311882352391","note":""},{"id":"ics0596","mode":"hotel","date":"2026-04-13","from":"","to":"","price":97.0,"paid":97.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0597","mode":"rail","date":"2026-04-14","from":"FRA","to":"BER","price":0,"paid":18.99,"km":545,"ref":"394857737020","note":""},{"id":"ics0598","mode":"air","date":"2026-04-21","from":"BER","to":"FRA","price":95.74,"paid":95.74,"km":0,"ref":"2244828702","note":""},{"id":"ics0599","mode":"hotel","date":"2026-04-21","from":"","to":"","price":164.5,"paid":164.5,"km":0,"ref":"","note":"Sheraton"},{"id":"ics0600","mode":"air","date":"2026-04-23","from":"FRA","to":"BER","price":95.74,"paid":95.74,"km":0,"ref":"2244828702","note":""},{"id":"ics0601","mode":"air","date":"2026-04-26","from":"BER","to":"FRA","price":102.7,"paid":102.7,"km":0,"ref":"2243179625","note":""},{"id":"ics0602","mode":"hotel","date":"2026-04-27","from":"","to":"","price":62.0,"paid":62.0,"km":0,"ref":"","note":"Zleep Kelsterbach"},{"id":"ics0603","mode":"car","date":"2026-04-28","from":"FRA","to":"BER","price":0,"paid":0,"km":545,"ref":"","note":""},{"id":"ics0604","mode":"air","date":"2026-05-19","from":"BER","to":"FRA","price":0,"paid":0,"km":0,"ref":"2247292458","note":""},{"id":"ics0605","mode":"hotel","date":"2026-05-19","from":"","to":"","price":73.0,"paid":73.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0606","mode":"air","date":"2026-05-22","from":"FRA","to":"BER","price":82.74,"paid":82.74,"km":0,"ref":"2247292458","note":""},{"id":"ics0607","mode":"rail","date":"2026-05-28","from":"BER","to":"FRA","price":0,"paid":26.99,"km":545,"ref":"547525507823","note":""},{"id":"ics0608","mode":"air","date":"2026-05-30","from":"FRA","to":"BER","price":103.74,"paid":103.74,"km":0,"ref":"2247514401","note":""},{"id":"ics0609","mode":"air","date":"2026-06-02","from":"BER","to":"FRA","price":103.74,"paid":103.74,"km":0,"ref":"2247514401","note":""},{"id":"ics0610","mode":"hotel","date":"2026-06-02","from":"","to":"","price":67.0,"paid":67.0,"km":0,"ref":"","note":"Steigenberger"},{"id":"ics0611","mode":"rail","date":"2026-06-08","from":"BER","to":"FRA","price":0,"paid":36.99,"km":545,"ref":"535506069176","note":""},{"id":"ics0612","mode":"air","date":"2026-06-12","from":"FRA","to":"BER","price":94.74,"paid":94.74,"km":0,"ref":"2248347916","note":""},{"id":"ics0613","mode":"air","date":"2026-06-16","from":"FRA","to":"BER","price":43.01,"paid":43.01,"km":0,"ref":"2248804758","note":""},{"id":"ics0614","mode":"air","date":"2026-06-16","from":"BER","to":"FRA","price":82.74,"paid":82.74,"km":0,"ref":"2248012749","note":""},{"id":"ics0615","mode":"air","date":"2026-06-25","from":"BER","to":"FRA","price":94.74,"paid":94.74,"km":0,"ref":"2248347916","note":""}];
+const $=id=>document.getElementById(id);
+const KEY='shuttle.trips.v1';
+let trips=load();
+let mode='air', editId=null, viewYear='all', editMode=false, filterMode='all';
+
+const MODE_INFO={
+  air:{icon:'✈️',label:'Flug',badge:'m-air',refLabel:'Ticketnummer',refPh:'z. B. 220-1234567890'},
+  rail:{icon:'🚆',label:'Bahn',badge:'m-rail',refLabel:'Buchungsnummer',refPh:'z. B. ABCD12'},
+  car:{icon:'🚗',label:'Auto',badge:'m-car',refLabel:'Kennzeichen / Ref.',refPh:'optional'},
+  hotel:{icon:'🏨',label:'Hotel',badge:'m-hotel',refLabel:'Buchungsnummer',refPh:'optional'}
+};
+
+function load(){
+  try{const raw=localStorage.getItem(KEY);
+    if(raw!==null)return JSON.parse(raw)||[];
+  }catch(e){}
+  // first run: load embedded iCal import
+  try{localStorage.setItem(KEY,JSON.stringify(SEED));}catch(e){}
+  return SEED.slice();
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(trips))}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function eur(n){return n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function parseNum(s){return parseFloat((s||'').replace(/\./g,'').replace(',','.'))||0}
+
+// Entfernungspauschale, einfacher Weg
+function kmCost(km){
+  if(km<=0)return 0;
+  const first=Math.min(km,20)*0.30;
+  const rest=Math.max(0,km-20)*0.38;
+  return first+rest;
+}
+// absetzbar: Flug/Hotel = Preis, Bahn/Auto = km-Pauschale
+function deductCost(t){return(t.mode==='air'||t.mode==='hotel')?(t.price||0):kmCost(t.km||0)}
+// entstanden/gezahlt: was real bezahlt wurde (Auto = 0)
+function paidCost(t){
+  if(t.mode==='air'||t.mode==='hotel')return t.price||0;
+  return t.paid||0;
+}
+function tripCost(t){return deductCost(t)} // Kompat.
+
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1800);}
+
+/* ---------- Render ---------- */
+function years(){
+  const ys=[...new Set(trips.map(t=>(t.date||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  return ys;
+}
+function inYear(t){return viewYear==='all'||(t.date||'').slice(0,4)===viewYear}
+
+function render(){
+  // year pills
+  const yp=$('yearPills');yp.innerHTML='';
+  const ys=years();
+  const allP=document.createElement('div');
+  allP.className='year-pill'+(viewYear==='all'?' on':'');allP.textContent='Gesamt';
+  allP.onclick=()=>{viewYear='all';render()};yp.appendChild(allP);
+  ys.forEach(y=>{const p=document.createElement('div');
+    p.className='year-pill'+(viewYear===y?' on':'');p.textContent=y;
+    p.onclick=()=>{viewYear=y;render()};yp.appendChild(p);});
+  $('yrLabel').textContent=viewYear==='all'?'(gesamt)':viewYear;
+
+  const yearTrips=trips.filter(inYear);
+  // per-category aggregates (always over the full year, ignoring category filter)
+  const agg={air:{d:0,p:0,n:0},rail:{d:0,p:0,n:0},car:{d:0,p:0,n:0},hotel:{d:0,p:0,n:0}};
+  yearTrips.forEach(t=>{const a=agg[t.mode];if(!a)return;
+    a.d+=deductCost(t);a.p+=paidCost(t);a.n++;});
+
+  const E=n=>Math.round(n)+' €';
+  $('sumAir').textContent=E(agg.air.d);$('paidAir').textContent=E(agg.air.p);
+  $('cntAir').textContent=agg.air.n+(agg.air.n===1?' Reise':' Reisen');
+  $('sumRail').textContent=E(agg.rail.d);$('paidRail').textContent=E(agg.rail.p);
+  $('cntRail').textContent=agg.rail.n+(agg.rail.n===1?' Reise':' Reisen');
+  $('sumCar').textContent=E(agg.car.d);$('paidCar').textContent=E(agg.car.p);
+  $('cntCar').textContent=agg.car.n+(agg.car.n===1?' Reise':' Reisen');
+  $('sumHotel').textContent=E(agg.hotel.d);$('paidHotel').textContent=E(agg.hotel.p);
+  $('cntHotel').textContent=agg.hotel.n+(agg.hotel.n===1?' Nacht':' Nächte');
+
+  // active filter highlight on chips
+  document.querySelectorAll('#strip .chip').forEach(c=>
+    c.classList.toggle('on',c.dataset.fmode===filterMode));
+
+  // header totals: respect category filter
+  const headTrips=yearTrips.filter(t=>filterMode==='all'||t.mode===filterMode);
+  let totD=0,totP=0;
+  headTrips.forEach(t=>{totD+=deductCost(t);totP+=paidCost(t);});
+  $('totalVal').textContent=eur(totD);
+  $('paidVal').textContent=eur(totP);
+
+  const labelDE={air:'Flug',rail:'Bahn',car:'Auto',hotel:'Hotel'};
+  $('filterNote').innerHTML=filterMode==='all'?''
+    :`Gefiltert: ${labelDE[filterMode]}<span class="clear" id="clearFilter">alle anzeigen</span>`;
+  if(filterMode!=='all'){const cf=$('clearFilter');if(cf)cf.onclick=()=>{filterMode='all';render();};}
+
+  const shown=headTrips.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  const list=$('list');list.innerHTML='';
+  if(!shown.length){
+    list.innerHTML=`<div class="empty"><div class="big">🛫</div>
+      <p><b>Keine Einträge${filterMode==='all'?'':' in dieser Kategorie'}.</b></p>
+      <p>Tippe auf „＋ Reise", um einen Eintrag hinzuzufügen.</p></div>`;
+    return;
+  }
+  shown.forEach(t=>{
+    const mi=MODE_INFO[t.mode];const c=deductCost(t);const pc=paidCost(t);
+    const d=t.date?new Date(t.date+'T00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'2-digit'}):'—';
+    const el=document.createElement('div');el.className='trip'+(editMode?' editmode':'');
+    el.innerHTML=`
+      <div class="mode-badge ${mi.badge}">${mi.icon}</div>
+      <div class="trip-main">
+        <div class="route">${t.mode==='hotel'
+          ?(esc(t.note||'Hotel'))
+          :`${esc(t.from||'?')} <span class="arr">→</span> ${esc(t.to||'?')}`}</div>
+        <div class="meta">
+          <span>${d}</span>
+          ${t.ref?`<span class="ref">${esc(t.ref)}</span>`:''}
+          ${(t.note&&t.mode!=='hotel')?`<span>· ${esc(t.note)}</span>`:''}
+        </div>
+      </div>
+      <div class="amt">
+        <div class="e">${eur(c)} €</div>
+        ${t.mode==='air'?`<div class="km">Ticketpreis</div>`
+          :t.mode==='hotel'?`<div class="km">Übernachtung</div>`
+          :t.mode==='rail'?`<div class="km">${t.km||0} km · gez. ${eur(pc)} €</div>`
+          :`<div class="km">${t.km||0} km · einfach</div>`}
+      </div>
+      <button class="del" data-id="${t.id}">✕</button>`;
+    el.querySelector('.trip-main').onclick=()=>openSheet(t.id);
+    el.querySelector('.mode-badge').onclick=()=>openSheet(t.id);
+    el.querySelector('.del').onclick=(e)=>{e.stopPropagation();
+      if(confirm('Diese Reise löschen?')){trips=trips.filter(x=>x.id!==t.id);save();render();toast('Gelöscht')}};
+    list.appendChild(el);
+  });
+}
+function esc(s){return(s+'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* ---------- Sheet ---------- */
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('.mode-opt').forEach(o=>o.classList.toggle('sel',o.dataset.mode===m));
+  const hotel=m==='hotel', air=m==='air', rail=m==='rail', car=m==='car';
+  const usesDirectPrice=air||hotel;   // Preisfeld = absetzbar
+  const usesKm=rail||car;             // km-Feld = absetzbar
+  $('routeBlock').style.display=hotel?'none':'';
+  $('hotelField').style.display=hotel?'':'none';
+  $('priceField').style.display=usesDirectPrice?'':'none';
+  $('paidField').style.display=rail?'':'none';   // gezahlter Preis nur bei Bahn
+  $('kmField').style.display=usesKm?'':'none';
+  $('priceLabel').textContent=hotel?'Übernachtungspreis (€)':'Ticketpreis (€)';
+  $('refLabel').textContent=MODE_INFO[m].refLabel;
+  $('fRef').placeholder=MODE_INFO[m].refPh;
+  $('refSummary').textContent=MODE_INFO[m].refLabel+' & Notiz hinzufügen';
+  updateCalc();
+}
+function updateCalc(){
+  const box=$('calcBox');
+  if(mode==='air'||mode==='hotel'){box.classList.remove('show');return}
+  const km=parseNum($('fKm').value);
+  if(km>0){
+    box.classList.add('show');
+    box.innerHTML=`Absetzbar: ${km} km × Entfernungspauschale = <b>${eur(kmCost(km))} €</b>`;
+  }else box.classList.remove('show');
+}
+function openSheet(id){
+  editId=id||null;
+  $('sheetTitle').textContent=id?'Reise bearbeiten':'Neue Reise';
+  if(id){
+    const t=trips.find(x=>x.id===id);
+    setMode(t.mode);
+    $('fDate').value=t.date||'';$('fFrom').value=t.from||'';$('fTo').value=t.to||'';
+    $('fPrice').value=t.price?eur(t.price):'';
+    $('fPaid').value=t.paid?eur(t.paid):'';
+    $('fKm').value=t.km||'';$('fRef').value=t.ref||'';
+    if(t.mode==='hotel'){$('fHotel').value=t.note||'';$('fNote').value='';}
+    else{$('fHotel').value='';$('fNote').value=t.note||'';}
+    if(t.ref||(t.note&&t.mode!=='hotel'))document.querySelector('.more').open=true;
+  }else{
+    setMode('air');
+    $('fDate').value=new Date().toISOString().slice(0,10);
+    $('fFrom').value='BER';$('fTo').value='FRA';
+    $('fPrice').value='';$('fPaid').value='';$('fKm').value='';$('fRef').value='';$('fNote').value='';$('fHotel').value='';
+    document.querySelector('.more').open=false;
+  }
+  updateCalc();
+  $('scrim').classList.add('show');$('sheet').classList.add('show');
+}
+function closeSheet(){$('scrim').classList.remove('show');$('sheet').classList.remove('show')}
+
+function saveTrip(){
+  const usesDirectPrice=mode==='air'||mode==='hotel';
+  const usesKm=mode==='rail'||mode==='car';
+  const t={
+    id:editId||uid(),mode,
+    date:$('fDate').value,
+    from:mode==='hotel'?'':$('fFrom').value.trim().toUpperCase(),
+    to:mode==='hotel'?'':$('fTo').value.trim().toUpperCase(),
+    price:usesDirectPrice?parseNum($('fPrice').value):0,
+    paid:usesDirectPrice?parseNum($('fPrice').value):(mode==='rail'?parseNum($('fPaid').value):0),
+    km:usesKm?parseNum($('fKm').value):0,
+    ref:$('fRef').value.trim(),
+    note:mode==='hotel'?$('fHotel').value.trim():$('fNote').value.trim()
+  };
+  if(!t.date){toast('Bitte Datum angeben');return}
+  if(mode==='air'&&t.price<=0){toast('Bitte Ticketpreis angeben');return}
+  if(mode==='hotel'&&t.price<=0){toast('Bitte Übernachtungspreis angeben');return}
+  if(usesKm&&t.km<=0){toast('Bitte Entfernung angeben');return}
+  if(editId){trips=trips.map(x=>x.id===editId?t:x)}else{trips.push(t)}
+  save();closeSheet();render();
+  toast(editId?'Aktualisiert ✓':'Reise gespeichert ✓');
+  copyBackupToClipboard(true).then(ok=>{
+    if(ok)setTimeout(()=>toast('📋 Backup in Zwischenablage → in Notizen einfügen'),1900);
+  });
+}
+
+/* ---------- Excel export (SpreadsheetML, opens in Excel/Numbers) ---------- */
+function exportExcel(){
+  let rows=trips.filter(inYear);
+  if(filterMode!=='all')rows=rows.filter(t=>t.mode===filterMode);
+  rows=rows.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  if(!rows.length){toast('Keine Einträge zum Exportieren');return}
+  const head=['Datum','Kategorie','Von','Nach','km (einfach)','Gezahlt €','Absetzbar €','Beleg-Nr.','Hotel / Notiz'];
+  const modeName={air:'Flug',rail:'Bahn',car:'Auto',hotel:'Hotel'};
+  const usesKm=t=>t.mode==='rail'||t.mode==='car';
+  let totPaid=0,totDed=0;
+  const body=rows.map(t=>{
+    const d=deductCost(t),p=paidCost(t);totDed+=d;totPaid+=p;
+    return [t.date,modeName[t.mode],t.from||'',t.to||'',
+      usesKm(t)?(t.km||0):'',
+      p?eur(p):(t.mode==='car'?'0,00':''),
+      eur(d),
+      t.ref||'',t.note||''];
+  });
+  const cell=(v,bold)=>{
+    const num=typeof v==='number';
+    const s=String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<Cell${bold?' ss:StyleID="b"':''}><Data ss:Type="${num?'Number':'String'}">${s}</Data></Cell>`;
+  };
+  const rowXml=(arr,bold)=>`<Row>${arr.map(v=>cell(v,bold)).join('')}</Row>`;
+  const ylabel=viewYear==='all'?'Gesamt':viewYear;
+  const fl=filterMode==='all'?'':'_'+modeName[filterMode];
+  const xml=`<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Styles>
+ <Style ss:ID="b"><Font ss:Bold="1"/></Style>
+</Styles>
+<Worksheet ss:Name="Reisekosten ${ylabel}">
+<Table>
+${rowXml(head,true)}
+${body.map(r=>rowXml(r)).join('\n')}
+${rowXml(['','','','','Summe',eur(totPaid),eur(totDed),'',''],true)}
+</Table>
+</Worksheet>
+</Workbook>`;
+  const blob=new Blob(['\ufeff'+xml],{type:'application/vnd.ms-excel'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`Reisekosten_${ylabel}${fl}.xls`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast('Excel-Datei erstellt ✓');
+}
+
+/* ---------- iCal Import ---------- */
+function normPlace(p){const u=p.trim().toUpperCase();
+  if(['TXL','BER','BERLIN'].includes(u))return'BER';
+  if(['FRA','FRANKFURT'].includes(u))return'FRA';
+  if(u.includes('OSTKREUZ'))return'BER';
+  if(u.includes('FLUGHAFEN'))return'FRA';
+  return p.trim();}
+function unesc(s){return s.replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\').trim();}
+function priceOf(s){const m=s.match(/(\d+(?:[.,]\d+)?)\s*€/);
+  return m?parseFloat(m[1].replace(/\./g,'').replace(',','.')):0;}
+
+function parseSummary(summary,dateStr){
+  const s=unesc(summary),low=s.toLowerCase();
+  if(low.startsWith('eigent'))return null;
+  if(low.startsWith('hotel')){
+    let name=s.slice(5).replace(/\s*\d+(?:[.,]\d+)?\s*€?\s*$/,'').trim();
+    let price=priceOf(s);
+    if(!price){const m=s.match(/(\d+(?:[.,]\d+)?)\s*$/);if(m)price=parseFloat(m[1].replace(',','.'));}
+    return{mode:'hotel',date:dateStr,from:'',to:'',price:price||0,paid:price||0,km:0,ref:'',note:name};
+  }
+  let mode;
+  if(low.startsWith('flug'))mode='air';
+  else if(/^(zug|bahn|bus)/.test(low))mode='rail';
+  else if(/^(auto|mietauto)/.test(low))mode='car';
+  else if(low.startsWith('shuttle'))mode=/\b(car|mietauto|auto)\b/.test(low)?'car':'rail';
+  else return null;
+
+  let ref='';
+  let m=s.match(/\b(\d{10,})\b/);
+  if(m)ref=m[1];
+  else{m=s.match(/\b([A-Z0-9]{6})\b/);if(m&&!['BER','FRA','TXL'].includes(m[1]))ref=m[1];}
+
+  let frm=null,to=null;
+  const mrt=s.match(/([A-Za-zäöüÄÖÜ][A-Za-zäöüÄÖÜ ]*?)\s*(?:->|–|-)\s*([A-Za-zäöüÄÖÜ][A-Za-zäöüÄÖÜ ]*)/);
+  if(mrt&&!/\d/.test(mrt[0])){
+    const a=normPlace(mrt[1].replace(/iOS/i,'').trim()),b=normPlace(mrt[2].trim());
+    if(a&&b&&a.toLowerCase()!=='ios'){frm=a;to=b;}
+  }
+  const CF={'FRA':'BER','BER':'FRA'};
+  if(frm===null){
+    let place=null;
+    for(const t of s.split(/\s+/).slice(1)){
+      const n=normPlace(t);
+      if(n==='BER'||n==='FRA'){place=n;break;}
+      if(['Bayreuth','Köln','Nürnberg','München','Madrid'].includes(t)){place=n;break;}
+    }
+    if(CF[place]){frm=CF[place];to=place;}
+    else if(place){frm='?';to=place;}
+    else{frm='?';to='?';}
+  }
+  const note=(frm==='?'||to==='?')?'⚠︎ Strecke prüfen':'';
+  const paidPrice=priceOf(s);
+  return{mode,date:dateStr,
+    from:frm==='?'?'':frm,to:to==='?'?'':to,
+    price:mode==='air'?paidPrice:0,
+    paid:mode==='air'?paidPrice:(mode==='rail'?paidPrice:0),
+    km:(mode==='car'||mode==='rail')?545:0,
+    ref,note};
+}
+
+function parseICS(text){
+  text=text.replace(/\r\n/g,'\n').replace(/\n[ \t]/g,'');
+  const lines=text.split('\n');
+  const out=[];let cur=null;
+  for(const ln of lines){
+    if(ln==='BEGIN:VEVENT')cur={};
+    else if(ln==='END:VEVENT'){if(cur)out.push(cur);cur=null;}
+    else if(cur){
+      if(ln.startsWith('SUMMARY:'))cur.summary=ln.slice(8);
+      else if(ln.startsWith('DTSTART')){const m=ln.match(/:(\d{8})/);if(m)cur.d=m[1];}
+    }
+  }
+  const trips=[];
+  for(const e of out){
+    if(!e.summary)continue;
+    const d=e.d||'';const ds=d.length===8?`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`:'';
+    const r=parseSummary(e.summary,ds);
+    if(r)trips.push(r);
+  }
+  return trips;
+}
+
+function importICS(text){
+  const incoming=parseICS(text);
+  if(!incoming.length){toast('Keine Reisen in der Datei gefunden');return;}
+  // duplicate key: date|mode|ref|price
+  const keyOf=t=>`${t.date}|${t.mode}|${t.ref}|${t.price}|${t.paid||0}|${t.km}`;
+  const have=new Set(trips.map(keyOf));
+  let added=0;
+  incoming.forEach(t=>{
+    if(have.has(keyOf(t)))return;
+    have.add(keyOf(t));
+    trips.push({...t,id:uid()});added++;
+  });
+  save();render();
+  const dup=incoming.length-added;
+  toast(`${added} importiert${dup?', '+dup+' Duplikate übersprungen':''} ✓`);
+  if(added>0)copyBackupToClipboard(true).then(ok=>{
+    if(ok)setTimeout(()=>toast('📋 Backup in Zwischenablage → in Notizen einfügen'),1900);
+  });
+}
+
+$('importBtn').onclick=()=>$('icsFile').click();
+$('icsFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{importICS(r.result);}catch(err){toast('Datei konnte nicht gelesen werden');}};
+  r.readAsText(f);
+  e.target.value='';
+};
+
+/* ---------- Backup Export / Import ---------- */
+function backupImport(text){
+  let payload;
+  try{payload=JSON.parse(text);}
+  catch(e){toast('Datei konnte nicht gelesen werden');return;}
+  // accept both raw array and {trips:[...]} envelope
+  const imported=Array.isArray(payload)?payload:(payload.trips||null);
+  if(!imported||!imported.length){toast('Keine gültigen Einträge in der Datei');return;}
+  // validate first entry has expected fields
+  const first=imported[0];
+  if(!first.id||!first.mode||!first.date){toast('Unbekanntes Format');return;}
+  if(!confirm(`${imported.length} Einträge wiederherstellen?\n\nDeine aktuellen ${trips.length} Einträge werden dabei ersetzt.`))return;
+  trips=imported;
+  save();render();
+  toast(`${trips.length} Einträge wiederhergestellt ✓`);
+}
+
+/* ---------- Backup: Clipboard ---------- */
+function backupPayload(){
+  return JSON.stringify({v:1,exported:new Date().toISOString(),count:trips.length,trips},null,0);
+}
+async function copyBackupToClipboard(silent){
+  const text=backupPayload();
+  try{
+    await navigator.clipboard.writeText(text);
+    if(!silent)toast('📋 Backup kopiert → in Notizen einfügen ✓');
+    return true;
+  }catch(e){
+    // Fallback: select a temp textarea
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    const ok=document.execCommand('copy');
+    ta.remove();
+    if(!silent)toast(ok?'📋 Backup kopiert → in Notizen einfügen ✓':'Kopieren fehlgeschlagen');
+    return ok;
+  }
+}
+
+function openRestoreSheet(){
+  $('restorePaste').value='';
+  $('restoreScrim').classList.add('show');
+  $('restoreSheet').classList.add('show');
+  setTimeout(()=>$('restorePaste').focus(),350);
+}
+function closeRestoreSheet(){
+  $('restoreScrim').classList.remove('show');
+  $('restoreSheet').classList.remove('show');
+}
+
+function doRestore(){
+  const text=$('restorePaste').value.trim();
+  if(!text){toast('Bitte erst JSON einfügen');return;}
+  backupImport(text);
+  if(trips.length)closeRestoreSheet();
+}
+
+$('backupCopyBtn').onclick=()=>copyBackupToClipboard(false);
+$('backupImportBtn').onclick=openRestoreSheet;
+$('restoreConfirmBtn').onclick=doRestore;
+$('restoreCancelBtn').onclick=closeRestoreSheet;
+$('restoreScrim').onclick=closeRestoreSheet;
+
+/* ---------- Events ---------- */
+document.querySelectorAll('#strip .chip').forEach(c=>c.onclick=()=>{
+  const m=c.dataset.fmode;
+  filterMode=(filterMode===m)?'all':m;
+  render();
+});
+$('addBtn').onclick=()=>openSheet(null);
+$('scrim').onclick=closeSheet;
+$('saveBtn').onclick=saveTrip;
+$('exportBtn').onclick=exportExcel;
+$('swapBtn').onclick=()=>{const a=$('fFrom').value;$('fFrom').value=$('fTo').value;$('fTo').value=a;};
+document.querySelectorAll('.mode-opt').forEach(o=>o.onclick=()=>setMode(o.dataset.mode));
+$('fKm').addEventListener('input',updateCalc);
+// long-press header total toggles edit/delete mode
+let pressT;
+$('list').addEventListener('contextmenu',e=>e.preventDefault());
+document.querySelector('.sec h2').addEventListener('click',()=>{editMode=!editMode;render();
+  toast(editMode?'Löschen aktiv – ✕ tippen':'Fertig');});
+
+render();
+</script>
+</body>
+</html>
