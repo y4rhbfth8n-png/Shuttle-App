@@ -299,7 +299,7 @@ details.more[open] summary::before{content:"－ ";}
     <div class="field" id="kmField" style="display:none">
       <label>Entfernung — einfacher Weg (km)</label>
       <input type="text" inputmode="decimal" id="fKm" placeholder="z. B. 420">
-      <div class="hint">Entfernungspauschale: 0,30 €/km bis 20 km, danach 0,38 €/km.</div>
+      <div class="hint">Entfernungspauschale auf halbe Strecke (einfacher Weg): 0,30 €/km bis 20 km, danach 0,38 €/km.</div>
     </div>
     <div class="calc-box" id="calcBox"></div>
 
@@ -357,8 +357,11 @@ function kmCost(km){
   const rest=Math.max(0,km-20)*0.38;
   return first+rest;
 }
-// absetzbar: Flug/Hotel = Preis, Bahn/Auto = km-Pauschale
-function deductCost(t){return(t.mode==='air'||t.mode==='hotel')?(t.price||0):kmCost(t.km||0)}
+// absetzbar: Flug/Hotel = Preis, Bahn/Auto = km-Pauschale nur halbe Strecke
+function deductCost(t){
+  if(t.mode==='air'||t.mode==='hotel')return t.price||0;
+  return kmCost((t.km||0)/2);
+}
 // entstanden/gezahlt: was real bezahlt wurde (Auto = 0)
 function paidCost(t){
   if(t.mode==='air'||t.mode==='hotel')return t.price||0;
@@ -486,7 +489,7 @@ function updateCalc(){
   const km=parseNum($('fKm').value);
   if(km>0){
     box.classList.add('show');
-    box.innerHTML=`Absetzbar: ${km} km × Entfernungspauschale = <b>${eur(kmCost(km))} €</b>`;
+    box.innerHTML=`Absetzbar: ${km/2} km (halbe Strecke) × Pauschale = <b>${eur(kmCost(km/2))} €</b>`;
   }else box.classList.remove('show');
 }
 function openSheet(id){
